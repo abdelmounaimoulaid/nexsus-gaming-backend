@@ -13,6 +13,9 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.4.1",
     "@prisma/adapter-pg": "^7.4.1",
