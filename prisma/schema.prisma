@@ -1,0 +1,280 @@
+generator client {
+  provider = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  id            String      @id @default(uuid())
+  email         String      @unique
+  password      String
+  systemRole    SystemRole  @default(ADMIN)
+  roleName      String?     @default("Admin")
+  
+  roleId        String?
+  role          Role?       @relation(fields: [roleId], references: [id])
+  
+  firstName     String?
+  lastName      String?
+  phone         String?
+  address       String?
+  city          String?
+  country       String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  createdById   String?
+  updatedById   String?
+  createdBy     User?       @relation("UserCreatedUsers", fields: [createdById], references: [id])
+  updatedBy     User?       @relation("UserUpdatedUsers", fields: [updatedById], references: [id])
+  
+  createdUsers  User[]      @relation("UserCreatedUsers")
+  updatedUsers  User[]      @relation("UserUpdatedUsers")
+
+  customer      Customer?
+  
+  // Audit relations for other models
+  createdCustomers Customer[] @relation("UserCreatedCustomers")
+  updatedCustomers Customer[] @relation("UserUpdatedCustomers")
+  createdBrands     Brand[]      @relation("UserCreatedBrands")
+  updatedBrands     Brand[]      @relation("UserUpdatedBrands")
+  createdCategories Category[]   @relation("UserCreatedCategories")
+  updatedCategories Category[]   @relation("UserUpdatedCategories")
+  createdProducts   Product[]    @relation("UserCreatedProducts")
+  updatedProducts   Product[]    @relation("UserUpdatedProducts")
+  createdCollections Collection[] @relation("UserCreatedCollections")
+  updatedCollections Collection[] @relation("UserUpdatedCollections")
+  createdRoles      Role[]       @relation("UserCreatedRoles")
+  updatedRoles      Role[]       @relation("UserUpdatedRoles")
+  createdCompanies  Company[]    @relation("UserCreatedCompanies")
+  updatedCompanies  Company[]    @relation("UserUpdatedCompanies")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  permissions Json     @default("[]")
+  isSystem    Boolean  @default(false)
+  icon        String?  @default("Shield")
+  color       String?  @default("#E05727")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  users       User[]
+
+  createdById String?
+  updatedById String?
+  createdBy   User?    @relation("UserCreatedRoles", fields: [createdById], references: [id])
+  updatedBy   User?    @relation("UserUpdatedRoles", fields: [updatedById], references: [id])
+}
+
+model Company {
+  id                String   @id @default(uuid())
+  name              String
+  registrationNumber String?  // Info of company
+  industry          String?
+  website           String?
+  email             String?
+  phone             String?
+  address           String?
+  city              String?
+  country           String?
+  zipCode           String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  customers         Customer[]
+
+  createdById       String?
+  updatedById       String?
+  createdBy         User?    @relation("UserCreatedCompanies", fields: [createdById], references: [id])
+  updatedBy         User?    @relation("UserUpdatedCompanies", fields: [updatedById], references: [id])
+}
+
+model Customer {
+  id            String   @id @default(uuid())
+  email         String?  @unique
+  firstName     String?
+  lastName      String?
+  phone         String?
+  address       String?
+  city          String?
+  country       String?
+  zipCode       String?
+  customerType  String?  @default("INDIVIDUAL") // INDIVIDUAL, COMPANY
+  
+  companyId     String?
+  company       Company? @relation(fields: [companyId], references: [id])
+
+  userId        String?  @unique
+  user          User?    @relation(fields: [userId], references: [id])
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  createdById   String?
+  updatedById   String?
+  createdBy     User?    @relation("UserCreatedCustomers", fields: [createdById], references: [id])
+  updatedBy     User?    @relation("UserUpdatedCustomers", fields: [updatedById], references: [id])
+}
+
+model Brand {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  logo        String?
+  description String?
+  website     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  createdById String?
+  updatedById String?
+  createdBy   User?    @relation("UserCreatedBrands", fields: [createdById], references: [id])
+  updatedBy   User?    @relation("UserUpdatedBrands", fields: [updatedById], references: [id])
+}
+
+model Category {
+  id              String     @id @default(uuid())
+  name            String
+  nameFr          String?
+  nameEn          String?
+  slug            String     @unique
+  icon            String?
+  parentId        String?
+  menuGroup       String?
+  sortOrder       Int        @default(0)
+  visibility      Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  metaDescription String?
+  metaKeywords    String?
+  metaTitle       String?
+  parent          Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  subCategories   Category[] @relation("SubCategories")
+  products        Product[]
+
+  createdById     String?
+  updatedById     String?
+  createdBy       User?      @relation("UserCreatedCategories", fields: [createdById], references: [id])
+  updatedBy       User?      @relation("UserUpdatedCategories", fields: [updatedById], references: [id])
+}
+
+model Product {
+  id              String         @id @default(uuid())
+  name            String
+  slug            String         @unique
+  description     String
+  price           Float
+  originalPrice   Float?
+  categoryId      String
+  brand           String
+  stock           Int            @default(0)
+  status          ProductStatus  @default(DRAFT)
+  badge           String?
+  isFeatured      Boolean        @default(false)
+  specs           Json           @default("{}")
+  variations      Json           @default("[]")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  metaDescription String?
+  metaKeywords    String?
+  metaTitle       String?
+  category        Category       @relation(fields: [categoryId], references: [id])
+  images          ProductImage[]
+  collections     Collection[]   @relation("CollectionToProduct")
+
+  createdById     String?
+  updatedById     String?
+  createdBy       User?          @relation("UserCreatedProducts", fields: [createdById], references: [id])
+  updatedBy       User?          @relation("UserUpdatedProducts", fields: [updatedById], references: [id])
+}
+
+model Collection {
+  id           String    @id @default(uuid())
+  name         String    @unique
+  nameFr       String?
+  nameEn       String?
+  slug         String    @unique
+  description  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  color        String?
+  showInNavbar Boolean   @default(false)
+  products     Product[] @relation("CollectionToProduct")
+
+  createdById  String?
+  updatedById  String?
+  createdBy    User?     @relation("UserCreatedCollections", fields: [createdById], references: [id])
+  updatedBy    User?     @relation("UserUpdatedCollections", fields: [updatedById], references: [id])
+}
+
+model ProductImage {
+  id        String   @id @default(uuid())
+  productId String
+  url       String
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Section {
+  id        String      @id @default(uuid())
+  name      String
+  type      SectionType
+  sortOrder Int         @default(0)
+  isActive  Boolean     @default(true)
+  config    Json        @default("{}")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model Banner {
+  id        String    @id @default(uuid())
+  title     String
+  imagePath String
+  targetUrl String
+  sectionId String?
+  startDate DateTime?
+  endDate   DateTime?
+  status    String    @default("Active")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+enum SystemRole {
+  SUPER_ADMIN
+  ADMIN
+  USER
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  HIDDEN
+}
+
+enum SectionType {
+  HERO
+  CATEGORIES
+  PRODUCT_CAROUSEL
+  PRODUCT_GRID
+  PROMO_GRID
+  BANNER
+  FEATURED_BUILDS
+  FEATURES
+  PROMO_BANNER
+}
+
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String   @db.Text
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
