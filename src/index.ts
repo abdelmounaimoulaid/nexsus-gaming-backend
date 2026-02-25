@@ -99,6 +99,11 @@ app.use('/api/customers', customersRoutes);
 app.use('/api/companies', companiesRoutes);
 app.use('/api/settings', settingsRoutes);
 
+// Root Welcome Route
+app.get('/', (req, res) => {
+    res.json({ status: 'ok', message: 'Nexus Gaming API is live on Vercel!' });
+});
+
 // Simple Health Check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'Nexus Gaming Admin API running!' });
