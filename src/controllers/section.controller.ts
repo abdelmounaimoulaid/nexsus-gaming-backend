@@ -7,6 +7,7 @@ export class SectionController {
             const sections = await SectionService.getSections();
             res.json(sections);
         } catch (error) {
+            console.error('GET SECTIONS ERROR:', error);
             res.status(500).json({ message: 'Failed to fetch sections' });
         }
     }
