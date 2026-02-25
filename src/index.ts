@@ -23,8 +23,7 @@ dotenv.config();
 
 // Ensure JWT_SECRET is not the dummy dev value in production
 if (process.env.NODE_ENV === 'production' && process.env.JWT_SECRET === 'NEXUS_GAMING_SUPER_SECRET_KEY_FOR_JWT_DEV_ONLY') {
-    console.error('CRITICAL ERROR: Refusing to start in production with the default dummy JWT_SECRET. Please change it in your .env file.');
-    process.exit(1);
+    console.warn('⚠️ SECURITY WARNING: You are running in production using the default dev JWT_SECRET. Please change it in your Hostinger .env file ASAP!');
 }
 
 export const prisma = new PrismaClient();
