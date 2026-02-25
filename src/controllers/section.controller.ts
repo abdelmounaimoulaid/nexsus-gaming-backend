@@ -4,7 +4,7 @@ import { SectionService } from '../services/section.service';
 export class SectionController {
     static async getSections(req: Request, res: Response) {
         try {
-            const sections = await SectionService.getSections();
+            const sections = await SectionService.getSections(req.query.resolve === 'true');
             res.json(sections);
         } catch (error) {
             console.error('GET SECTIONS ERROR:', error);

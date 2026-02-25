@@ -11,9 +11,13 @@ class BrandService {
     static async getBrands() {
         return await index_1.prisma.brand.findMany({
             orderBy: { name: 'asc' },
-            include: {
-                createdBy: { select: { id: true, email: true, firstName: true, lastName: true } },
-                updatedBy: { select: { id: true, email: true, firstName: true, lastName: true } }
+            select: {
+                id: true,
+                name: true,
+                slug: true,
+                logo: true,
+                description: true,
+                website: true
             }
         });
     }

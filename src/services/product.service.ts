@@ -6,36 +6,114 @@ import path from 'path';
 
 export class ProductService {
     static async getProducts(query: any) {
-        const { categoryId, featured, status, page = '1', limit = '10', search } = query;
+        const { categoryId, featured, status, page = '1', limit = '24', search, brands, collections, minPrice, maxPrice, availability, sortBy, ids } = query;
         const pageNumber = parseInt(String(page), 10) || 1;
-        const limitNumber = parseInt(String(limit), 10) || 10;
+        const limitNumber = parseInt(String(limit), 10) || 24;
         const skip = (pageNumber - 1) * limitNumber;
 
         const where: any = {};
-        if (categoryId) where.categoryId = String(categoryId);
+
+        if (ids) {
+            const idList = String(ids).split(',').map(id => id.trim());
+            where.id = { in: idList };
+        }
+
+        // Category filtering (including sub-tree for each ID)
+        if (categoryId) {
+            const idList = String(categoryId).split(',').map(id => id.trim());
+            const allCats = await prisma.category.findMany();
+            const validCategoryIds: Set<string> = new Set();
+
+            const findDescendants = (parentId: string) => {
+                const toddlers = allCats.filter(c => c.parentId === parentId);
+                toddlers.forEach(s => {
+                    validCategoryIds.add(s.id);
+                    findDescendants(s.id);
+                });
+            };
+
+            idList.forEach(id => {
+                validCategoryIds.add(id);
+                findDescendants(id);
+            });
+
+            where.categoryId = { in: Array.from(validCategoryIds) };
+        }
+
         if (featured === 'true') where.isFeatured = true;
         if (status) where.status = String(status).toUpperCase();
+
+        if (brands) {
+            const brandList = String(brands).split(',').map(b => b.trim());
+            where.brand = { in: brandList };
+        }
+
+        if (collections) {
+            const collectionList = String(collections).split(',').map(c => c.trim());
+            where.collections = {
+                some: {
+                    OR: [
+                        { id: { in: collectionList } },
+                        { slug: { in: collectionList } }
+                    ]
+                }
+            };
+        }
+
+        if (minPrice || maxPrice) {
+            where.price = {};
+            if (minPrice) where.price.gte = parseFloat(String(minPrice));
+            if (maxPrice) where.price.lte = parseFloat(String(maxPrice));
+        }
+
+        if (availability === 'in-stock') {
+            where.stock = { gt: 0 };
+        } else if (availability === 'out-of-stock') {
+            where.stock = { lte: 0 };
+        }
 
         if (search) {
             const searchStr = String(search);
             where.OR = [
                 { name: { contains: searchStr } },
-                { description: { contains: searchStr } }
+                { description: { contains: searchStr } },
+                { brand: { contains: searchStr } }
             ];
         }
+
+        // Sorting
+        let orderBy: any = { createdAt: 'desc' };
+        if (sortBy === 'price-asc') orderBy = { price: 'asc' };
+        else if (sortBy === 'price-desc') orderBy = { price: 'desc' };
+        else if (sortBy === 'rating') orderBy = { rating: 'desc' };
 
         const total = await prisma.product.count({ where });
 
         const products = await prisma.product.findMany({
             where,
-            include: {
-                category: true,
-                images: true,
-                collections: true,
-                createdBy: { select: { id: true, email: true, firstName: true, lastName: true } },
-                updatedBy: { select: { id: true, email: true, firstName: true, lastName: true } }
+            select: {
+                id: true,
+                name: true,
+                slug: true,
+                price: true,
+                originalPrice: true,
+                brand: true,
+                stock: true,
+                status: true,
+                badge: true,
+                isFeatured: true,
+                category: {
+                    select: { id: true, name: true, slug: true }
+                },
+                images: {
+                    take: 1,
+                    select: { id: true, url: true }
+                },
+                collections: {
+                    select: { id: true, name: true, slug: true, color: true }
+                }
             },
-            orderBy: { createdAt: 'desc' },
+            orderBy,
             skip,
             take: limitNumber
         });

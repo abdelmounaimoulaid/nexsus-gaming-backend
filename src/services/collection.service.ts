@@ -6,9 +6,15 @@ export class CollectionService {
     static async getCollections() {
         return await prisma.collection.findMany({
             orderBy: { name: 'asc' },
-            include: {
-                createdBy: { select: { id: true, email: true, firstName: true, lastName: true } },
-                updatedBy: { select: { id: true, email: true, firstName: true, lastName: true } }
+            select: {
+                id: true,
+                name: true,
+                nameFr: true,
+                nameEn: true,
+                slug: true,
+                description: true,
+                color: true,
+                showInNavbar: true
             }
         });
     }

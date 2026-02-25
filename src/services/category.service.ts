@@ -4,54 +4,57 @@ import { parse } from 'csv-parse/sync';
 
 export class CategoryService {
     static async getCategories(query: any) {
+        const selectFields: any = {
+            id: true,
+            name: true,
+            nameFr: true,
+            nameEn: true,
+            slug: true,
+            icon: true,
+            visibility: true,
+            sortOrder: true,
+            parentId: true,
+        };
+
+        const subCategorySelect = {
+            select: {
+                ...selectFields,
+                menuGroup: true, // Needed for Level 2 grouping
+                subCategories: {
+                    select: selectFields,
+                    orderBy: { sortOrder: 'asc' as const }
+                }
+            },
+            orderBy: { sortOrder: 'asc' as const }
+        };
+
         if (query.tree === 'true') {
             const isAdmin = query.admin === 'true';
-
             return await prisma.category.findMany({
                 where: isAdmin ? { parentId: null } : { visibility: true, parentId: null },
                 orderBy: { sortOrder: 'asc' },
-                include: {
+                select: {
+                    ...selectFields,
                     subCategories: {
+                        ...subCategorySelect,
                         where: isAdmin ? undefined : { visibility: true },
-                        orderBy: { sortOrder: 'asc' },
-                        include: {
+                        select: {
+                            ...subCategorySelect.select,
                             subCategories: {
-                                where: isAdmin ? undefined : { visibility: true },
-                                orderBy: { sortOrder: 'asc' },
-                                include: {
-                                    createdBy: { select: { id: true, email: true, firstName: true, lastName: true } },
-                                    updatedBy: { select: { id: true, email: true, firstName: true, lastName: true } }
-                                }
-                            },
-                            createdBy: { select: { id: true, email: true, firstName: true, lastName: true } },
-                            updatedBy: { select: { id: true, email: true, firstName: true, lastName: true } }
+                                ...subCategorySelect.select.subCategories,
+                                where: isAdmin ? undefined : { visibility: true }
+                            }
                         }
-                    },
-                    createdBy: { select: { id: true, email: true, firstName: true, lastName: true } },
-                    updatedBy: { select: { id: true, email: true, firstName: true, lastName: true } }
+                    }
                 }
             });
         }
 
         return await prisma.category.findMany({
             orderBy: { sortOrder: 'asc' },
-            include: {
-                subCategories: {
-                    orderBy: { sortOrder: 'asc' },
-                    include: {
-                        subCategories: {
-                            orderBy: { sortOrder: 'asc' },
-                            include: {
-                                createdBy: { select: { id: true, email: true, firstName: true, lastName: true } },
-                                updatedBy: { select: { id: true, email: true, firstName: true, lastName: true } }
-                            }
-                        },
-                        createdBy: { select: { id: true, email: true, firstName: true, lastName: true } },
-                        updatedBy: { select: { id: true, email: true, firstName: true, lastName: true } }
-                    }
-                },
-                createdBy: { select: { id: true, email: true, firstName: true, lastName: true } },
-                updatedBy: { select: { id: true, email: true, firstName: true, lastName: true } }
+            select: {
+                ...selectFields,
+                subCategories: subCategorySelect
             }
         });
     }

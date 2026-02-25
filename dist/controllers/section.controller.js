@@ -5,7 +5,7 @@ const section_service_1 = require("../services/section.service");
 class SectionController {
     static async getSections(req, res) {
         try {
-            const sections = await section_service_1.SectionService.getSections();
+            const sections = await section_service_1.SectionService.getSections(req.query.resolve === 'true');
             res.json(sections);
         }
         catch (error) {
