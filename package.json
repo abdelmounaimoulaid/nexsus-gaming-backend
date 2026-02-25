@@ -2,8 +2,9 @@
   "name": "admin-backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
+    "prestart": "npm run build",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "build": "npx prisma generate && tsc",
