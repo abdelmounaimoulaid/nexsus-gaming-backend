@@ -19,8 +19,6 @@ import rolesRoutes from './routes/roles';
 import customersRoutes from './routes/customers';
 import companiesRoutes from './routes/companies';
 import settingsRoutes from './routes/settingsRoutes';
-import { PrismaMariaDb } from '@prisma/adapter-mariadb';
-
 dotenv.config();
 
 // Ensure JWT_SECRET is not the dummy dev value in production
@@ -29,9 +27,7 @@ if (process.env.NODE_ENV === 'production' && process.env.JWT_SECRET === 'NEXUS_G
     process.exit(1);
 }
 
-const url = (process.env.DATABASE_URL || '').replace('mysql://', 'mariadb://').replace('localhost', '127.0.0.1');
-const adapter = new PrismaMariaDb(url);
-export const prisma = new PrismaClient({ adapter } as any);
+export const prisma = new PrismaClient();
 const app = express();
 const port = process.env.PORT || 5000;
 
