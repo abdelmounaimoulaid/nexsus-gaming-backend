@@ -26,7 +26,15 @@ if (process.env.NODE_ENV === 'production' && process.env.JWT_SECRET === 'NEXUS_G
     console.warn('⚠️ SECURITY WARNING: You are running in production using the default dev JWT_SECRET. Please change it in your Hostinger .env file ASAP!');
 }
 
-export const prisma = new PrismaClient();
+let prisma: PrismaClient;
+try {
+    prisma = new PrismaClient();
+} catch (error) {
+    console.error('CRITICAL ERROR: Failed to instantiate Prisma Client. Check if your DATABASE_URL in Hostinger contains unescaped special characters like "@". Use percent-encoding.');
+    console.error(error);
+}
+
+export { prisma };
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -108,8 +116,16 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 
 // Start server only if not in test mode
 if (process.env.NODE_ENV !== 'test') {
-    app.listen(port, () => {
+    app.listen(port, async () => {
         console.log(`Server running on port ${port} (MySQL)`);
+        if (prisma) {
+            try {
+                await prisma.$connect();
+                console.log('Database connected successfully.');
+            } catch (err) {
+                console.error('DATABASE CONNECTION ERROR: Your connection string in Hostinger is likely malformed or blocking access.', err);
+            }
+        }
     });
 }
 
