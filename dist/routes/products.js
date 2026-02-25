@@ -1,0 +1,20 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const multer_1 = __importDefault(require("multer"));
+const auth_middleware_1 = require("../middlewares/auth.middleware");
+const product_controller_1 = require("../controllers/product.controller");
+const router = express_1.default.Router();
+const upload = (0, multer_1.default)({ storage: multer_1.default.memoryStorage() });
+router.get('/', product_controller_1.ProductController.getProducts);
+router.get('/export', auth_middleware_1.requireAuth, product_controller_1.ProductController.exportProducts);
+router.get('/:id', product_controller_1.ProductController.getProductById);
+router.post('/', auth_middleware_1.requireAuth, product_controller_1.ProductController.createProduct);
+router.put('/:id', auth_middleware_1.requireAuth, product_controller_1.ProductController.updateProduct);
+router.post('/import', auth_middleware_1.requireAuth, upload.single('file'), product_controller_1.ProductController.importProducts);
+router.delete('/bulk', auth_middleware_1.requireAuth, product_controller_1.ProductController.bulkDeleteProducts);
+router.delete('/:id', auth_middleware_1.requireAuth, product_controller_1.ProductController.deleteProduct);
+exports.default = router;
