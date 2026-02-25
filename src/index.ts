@@ -43,15 +43,24 @@ app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" } // Required if serving images across domains
 }));
 
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:5174,http://localhost:8080,http://192.168.1.26:8080,https://yellow-scorpion-238891.hostingersite.com').split(',');
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:5174,http://localhost:8080,http://192.168.1.26:8080,https://yellow-scorpion-238891.hostingersite.com').split(',').map(o => o.trim().replace(/\/$/, ''));
 app.use(cors({
     origin: function (origin, callback) {
         // Allow requests with no origin (like mobile apps or curl requests) only if not strictly enforced,
         // but for safety in browsers we check the whitelist.
-        if (!origin || process.env.NODE_ENV !== 'production' || allowedOrigins.includes(origin)) {
+        if (!origin) return callback(null, true);
+
+        const cleanOrigin = origin.trim().replace(/\/$/, '');
+
+        if (
+            process.env.NODE_ENV !== 'production' ||
+            allowedOrigins.includes(cleanOrigin) ||
+            cleanOrigin === 'https://yellow-scorpion-238891.hostingersite.com'
+        ) {
             callback(null, true);
         } else {
             console.error('[CORS ERROR] Blocked unauthorized origin:', origin);
+            console.error('[CORS ERROR] Allowed origins are:', allowedOrigins);
             const error: any = new Error('Not allowed by CORS');
             error.statusCode = 403;
             callback(error);
