@@ -44,17 +44,19 @@ const port = process.env.PORT || 5000;
 app.use((0, helmet_1.default)({
     crossOriginResourcePolicy: { policy: "cross-origin" } // Required if serving images across domains
 }));
-// Set up CORS using an environment variable whitelist
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:5174').split(',');
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,http://localhost:5174,http://localhost:8080,http://192.168.1.26:8080,https://yellow-scorpion-238891.hostingersite.com').split(',');
 app.use((0, cors_1.default)({
     origin: function (origin, callback) {
         // Allow requests with no origin (like mobile apps or curl requests) only if not strictly enforced,
         // but for safety in browsers we check the whitelist.
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (!origin || process.env.NODE_ENV !== 'production' || allowedOrigins.includes(origin)) {
             callback(null, true);
         }
         else {
-            callback(new Error('Not allowed by CORS'));
+            console.error('[CORS ERROR] Blocked unauthorized origin:', origin);
+            const error = new Error('Not allowed by CORS');
+            error.statusCode = 403;
+            callback(error);
         }
     }
 }));
