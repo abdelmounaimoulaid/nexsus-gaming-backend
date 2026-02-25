@@ -121,3 +121,4 @@ if (process.env.NODE_ENV !== 'test') {
         }
     });
 }
+exports.default = app;
