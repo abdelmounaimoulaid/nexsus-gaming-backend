@@ -9,7 +9,7 @@ export const getSettings = async (req: Request, res: Response) => {
         // Convert array of {key, value} into a flat object for easier frontend consumption
         // e.g. { "phone": "+212 6...", "email": "contact@..." }
         const settingsMap: Record<string, string> = {};
-        settings.forEach(setting => {
+        settings.forEach((setting: any) => {
             settingsMap[setting.key] = setting.value;
         });
 

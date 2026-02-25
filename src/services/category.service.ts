@@ -214,7 +214,7 @@ export class CategoryService {
 
         const slugToId = new Map<string, string>();
         const existing = await prisma.category.findMany({ select: { id: true, slug: true } });
-        existing.forEach(e => slugToId.set(e.slug, e.id));
+        existing.forEach((e: any) => slugToId.set(e.slug, e.id));
 
         // Pass 1: Upsert
         for (const row of records) {
