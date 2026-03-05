@@ -4,7 +4,7 @@ import { CollectionService } from '../services/collection.service';
 export class CollectionController {
     static async getCollections(req: Request, res: Response) {
         try {
-            const collections = await CollectionService.getCollections();
+            const collections = await CollectionService.getCollections(req.query);
             res.json(collections);
         } catch (e) {
             res.status(500).json({ message: 'Failed to fetch collections', error: String(e) });

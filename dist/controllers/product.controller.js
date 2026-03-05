@@ -25,6 +25,19 @@ class ProductController {
             res.status(500).json({ message: 'Export failed', detail: error?.message });
         }
     }
+    static async exportImportTemplate(req, res) {
+        try {
+            const workbook = await product_service_1.ProductService.exportImportTemplateToExcel();
+            const date = new Date().toISOString().split('T')[0];
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename="nexus-import-template-${date}.xlsx"`);
+            await workbook.xlsx.write(res);
+            res.end();
+        }
+        catch (error) {
+            res.status(500).json({ message: 'Template export failed', detail: error?.message });
+        }
+    }
     static async getProductById(req, res) {
         try {
             const product = await product_service_1.ProductService.getProductById(req.params.id);

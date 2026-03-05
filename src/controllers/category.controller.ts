@@ -36,8 +36,8 @@ export class CategoryController {
         try {
             await CategoryService.deleteCategory(req.params.id as string);
             res.json({ success: true });
-        } catch (error) {
-            res.status(400).json({ message: 'Failed to delete category' });
+        } catch (error: any) {
+            res.status(400).json({ message: error.message || 'Failed to delete category' });
         }
     }
 

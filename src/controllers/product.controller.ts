@@ -26,6 +26,21 @@ export class ProductController {
         }
     }
 
+    static async exportImportTemplate(req: Request, res: Response) {
+        try {
+            const workbook = await ProductService.exportImportTemplateToExcel();
+            const date = new Date().toISOString().split('T')[0];
+
+            res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            res.setHeader('Content-Disposition', `attachment; filename="nexus-import-template-${date}.xlsx"`);
+
+            await workbook.xlsx.write(res);
+            res.end();
+        } catch (error: any) {
+            res.status(500).json({ message: 'Template export failed', detail: error?.message });
+        }
+    }
+
     static async getProductById(req: Request, res: Response) {
         try {
             const product = await ProductService.getProductById(req.params.id as string);

@@ -8,20 +8,57 @@ const index_1 = require("../index");
 const exceljs_1 = __importDefault(require("exceljs"));
 const sync_1 = require("csv-parse/sync");
 class CollectionService {
-    static async getCollections() {
-        return await index_1.prisma.collection.findMany({
-            orderBy: { name: 'asc' },
-            select: {
-                id: true,
-                name: true,
-                nameFr: true,
-                nameEn: true,
-                slug: true,
-                description: true,
-                color: true,
-                showInNavbar: true
+    static async getCollections(query = {}) {
+        const page = parseInt(query.page) || 1;
+        const limit = parseInt(query.limit) || 20;
+        const skip = (page - 1) * limit;
+        const where = {};
+        if (query.search) {
+            where.OR = [
+                { name: { contains: query.search } },
+                { slug: { contains: query.search } }
+            ];
+        }
+        // Check if pagination is completely disabled (for dropdowns etc)
+        if (query.noPagination === 'true') {
+            const allCollections = await index_1.prisma.collection.findMany({
+                where,
+                orderBy: { name: 'asc' },
+                select: { id: true, name: true, nameFr: true, nameEn: true, slug: true, description: true, color: true, showInNavbar: true }
+            });
+            return {
+                data: allCollections,
+                meta: { total: allCollections.length, page: 1, limit: allCollections.length, totalPages: 1 }
+            };
+        }
+        const [collections, total] = await Promise.all([
+            index_1.prisma.collection.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { name: 'asc' },
+                select: {
+                    id: true,
+                    name: true,
+                    nameFr: true,
+                    nameEn: true,
+                    slug: true,
+                    description: true,
+                    color: true,
+                    showInNavbar: true
+                }
+            }),
+            index_1.prisma.collection.count({ where })
+        ]);
+        return {
+            data: collections,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
             }
-        });
+        };
     }
     static async getCollectionById(id) {
         return await index_1.prisma.collection.findUnique({

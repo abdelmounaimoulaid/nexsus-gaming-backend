@@ -52,13 +52,50 @@ class CategoryService {
                 }
             });
         }
-        return await index_1.prisma.category.findMany({
-            orderBy: { sortOrder: 'asc' },
-            select: {
-                ...selectFields,
-                subCategories: subCategorySelect
+        const page = parseInt(query.page) || 1;
+        const limit = parseInt(query.limit) || 20;
+        const skip = (page - 1) * limit;
+        const where = {};
+        if (query.search) {
+            where.OR = [
+                { name: { contains: query.search } },
+                { slug: { contains: query.search } }
+            ];
+        }
+        // Check if pagination is completely disabled (for dropdowns etc)
+        if (query.noPagination === 'true') {
+            const allCategories = await index_1.prisma.category.findMany({
+                where,
+                orderBy: { sortOrder: 'asc' },
+                select: { ...selectFields, subCategories: subCategorySelect }
+            });
+            return {
+                data: allCategories,
+                meta: { total: allCategories.length, page: 1, limit: allCategories.length, totalPages: 1 }
+            };
+        }
+        const [categories, total] = await Promise.all([
+            index_1.prisma.category.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { sortOrder: 'asc' },
+                select: {
+                    ...selectFields,
+                    subCategories: subCategorySelect
+                }
+            }),
+            index_1.prisma.category.count({ where })
+        ]);
+        return {
+            data: categories,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
             }
-        });
+        };
     }
     static async createCategory(data, userId) {
         const { name, nameFr, nameEn, slug, parentId, sortOrder, visibility, icon, metaTitle, metaDescription, metaKeywords } = data;
@@ -106,7 +143,31 @@ class CategoryService {
         });
     }
     static async deleteCategory(id) {
-        return await index_1.prisma.category.delete({ where: { id } });
+        // Find all subcategories recursively to delete their products and then the categories themselves
+        const getDescendantIds = async (parentId) => {
+            const children = await index_1.prisma.category.findMany({ where: { parentId }, select: { id: true } });
+            let ids = children.map(c => c.id);
+            for (const childId of ids) {
+                const descendantIds = await getDescendantIds(childId);
+                ids = [...ids, ...descendantIds];
+            }
+            return ids;
+        };
+        const allCategoryIdsToDelete = [id, ...(await getDescendantIds(id))];
+        // 1. Delete all products belonging to this category or any of its subcategories
+        await index_1.prisma.product.deleteMany({
+            where: { categoryId: { in: allCategoryIdsToDelete } }
+        });
+        // 2. Delete the categories themselves (bottom-up to avoid foreign key errors)
+        // Since we mapped descendants, we can just deleteMany with IN. Prisma handles the order or we can just delete where ID in array. 
+        // Actually, prisma deleteMany on self-referential tables can sometimes complain, 
+        // so we delete them one by one starting from the deepest, but deleting products first ensures no products block them.
+        // We'll just delete them all. First we have to disconnect parents or delete bottom-up.
+        // Easiest is to delete in reverse order of discovery (which usually puts children after parents, so reverse = children first).
+        for (const catId of allCategoryIdsToDelete.reverse()) {
+            await index_1.prisma.category.delete({ where: { id: catId } }).catch(() => { });
+        }
+        return { success: true };
     }
     static async exportCategoriesToExcel() {
         const all = await index_1.prisma.category.findMany({

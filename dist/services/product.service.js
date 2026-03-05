@@ -23,20 +23,25 @@ class ProductService {
         // Category filtering (including sub-tree for each ID)
         if (categoryId) {
             const idList = String(categoryId).split(',').map(id => id.trim());
-            const allCats = await index_1.prisma.category.findMany();
-            const validCategoryIds = new Set();
-            const findDescendants = (parentId) => {
-                const toddlers = allCats.filter(c => c.parentId === parentId);
-                toddlers.forEach(s => {
-                    validCategoryIds.add(s.id);
-                    findDescendants(s.id);
+            if (idList.includes('UNCATEGORIZED')) {
+                where.categoryId = null;
+            }
+            else {
+                const allCats = await index_1.prisma.category.findMany();
+                const validCategoryIds = new Set();
+                const findDescendants = (parentId) => {
+                    const toddlers = allCats.filter(c => c.parentId === parentId);
+                    toddlers.forEach(s => {
+                        validCategoryIds.add(s.id);
+                        findDescendants(s.id);
+                    });
+                };
+                idList.forEach(id => {
+                    validCategoryIds.add(id);
+                    findDescendants(id);
                 });
-            };
-            idList.forEach(id => {
-                validCategoryIds.add(id);
-                findDescendants(id);
-            });
-            where.categoryId = { in: Array.from(validCategoryIds) };
+                where.categoryId = { in: Array.from(validCategoryIds) };
+            }
         }
         if (featured === 'true')
             where.isFeatured = true;
@@ -138,10 +143,11 @@ class ProductService {
         });
     }
     static async createProduct(data, userId) {
-        const { name, slug, description, price, originalPrice, categoryId, brand, stock, status, badge, isFeatured, specs, images, collectionIds } = data;
+        const { name, slug, description, longDescription, price, originalPrice, categoryId, brand, stock, status, badge, isFeatured, specs, images, collectionIds, variations } = data;
         return await index_1.prisma.product.create({
             data: {
-                name, slug, description, price, originalPrice, categoryId, brand, stock, status, badge, isFeatured, specs,
+                name, slug, description, longDescription, price, originalPrice, categoryId, brand, stock, status, badge, isFeatured, specs,
+                variations: variations || [],
                 images: {
                     create: images?.map((url) => ({ url })) || []
                 },
@@ -220,6 +226,7 @@ class ProductService {
             { header: 'specs', key: 'specs', width: 40 },
             { header: 'images', key: 'images', width: 50 },
             { header: 'description', key: 'description', width: 50 },
+            { header: 'longDescription', key: 'longDescription', width: 60 },
             { header: 'metaTitle', key: 'metaTitle', width: 40 },
             { header: 'metaDescription', key: 'metaDescription', width: 60 },
             { header: 'metaKeywords', key: 'metaKeywords', width: 40 },
@@ -236,15 +243,15 @@ class ProductService {
             let l1 = '', l2 = '', l3 = '';
             if (p.category) {
                 if (!p.category.parent)
-                    l1 = p.category.name;
+                    l1 = p.category.slug;
                 else if (p.category.parent && !p.category.parent.parent) {
-                    l1 = p.category.parent.name;
-                    l2 = p.category.name;
+                    l1 = p.category.parent.slug;
+                    l2 = p.category.slug;
                 }
                 else if (p.category.parent?.parent) {
-                    l1 = p.category.parent.parent.name;
-                    l2 = p.category.parent.name;
-                    l3 = p.category.name;
+                    l1 = p.category.parent.parent.slug;
+                    l2 = p.category.parent.slug;
+                    l3 = p.category.slug;
                 }
             }
             let imgToEmbed = '';
@@ -264,7 +271,9 @@ class ProductService {
                 isFeatured: p.isFeatured ? 'true' : 'false',
                 specs: typeof p.specs === 'string' ? p.specs : JSON.stringify(p.specs ?? {}),
                 images: imgToEmbed ? '' : (p.images?.map((img) => img.url).join(',') ?? ''),
-                description: p.description ?? '', metaTitle: p.metaTitle ?? '',
+                description: p.description ?? '',
+                longDescription: p.longDescription ?? '',
+                metaTitle: p.metaTitle ?? '',
                 metaDescription: p.metaDescription ?? '', metaKeywords: p.metaKeywords ?? '',
                 createdAt: p.createdAt.toISOString(),
             });
@@ -284,6 +293,86 @@ class ProductService {
                 row.eachCell((cell) => { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F4F6' } }; });
             }
         });
+        return workbook;
+    }
+    static async exportImportTemplateToExcel() {
+        const workbook = new exceljs_1.default.Workbook();
+        workbook.creator = 'Nexus Gaming Admin';
+        // 1. Products Template Sheet
+        const sheet = workbook.addWorksheet('Products Template', { views: [{ state: 'frozen', ySplit: 1 }] });
+        sheet.columns = [
+            { header: 'name', key: 'name', width: 35 },
+            { header: 'slug', key: 'slug', width: 35 },
+            { header: 'brand', key: 'brand', width: 20 },
+            { header: 'category_l1 (slug)', key: 'category_l1', width: 25 },
+            { header: 'category_l2 (slug)', key: 'category_l2', width: 25 },
+            { header: 'category_l3 (slug)', key: 'category_l3', width: 25 },
+            { header: 'price', key: 'price', width: 12 },
+            { header: 'originalPrice', key: 'originalPrice', width: 14 },
+            { header: 'stock', key: 'stock', width: 10 },
+            { header: 'status', key: 'status', width: 14 },
+            { header: 'isFeatured', key: 'isFeatured', width: 12 },
+            { header: 'collections', key: 'collections', width: 30 },
+            { header: 'specs', key: 'specs', width: 40 },
+            { header: 'images', key: 'images', width: 50 },
+            { header: 'description', key: 'description', width: 50 },
+            { header: 'longDescription', key: 'longDescription', width: 60 },
+            { header: 'metaTitle', key: 'metaTitle', width: 40 },
+            { header: 'metaDescription', key: 'metaDescription', width: 60 },
+            { header: 'metaKeywords', key: 'metaKeywords', width: 40 }
+        ];
+        sheet.getRow(1).eachCell((cell) => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A2E' } };
+            cell.font = { bold: true, color: { argb: 'FFFF6B35' }, size: 11 };
+            cell.border = { bottom: { style: 'medium', color: { argb: 'FFFF6B35' } } };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        });
+        sheet.getRow(1).height = 22;
+        sheet.addRow({
+            name: 'Example Product', slug: 'example-product-123', brand: 'Example Brand',
+            category_l1: 'pc-components', category_l2: 'processors', category_l3: 'intel',
+            price: '199.99', originalPrice: '249.99', stock: '10',
+            status: 'ACTIVE', isFeatured: 'true', collections: 'Summer Sale, New Arrivals',
+            specs: '{"Color":"Black","Weight":"1kg"}', images: 'https://example.com/img1.png, https://example.com/img2.png',
+            description: 'Short description', longDescription: 'Long HTML description',
+            metaTitle: 'Example Title', metaDescription: 'Example Description', metaKeywords: 'Example, Keywords'
+        });
+        const allCats = await index_1.prisma.category.findMany({ include: { parent: { include: { parent: true } } } });
+        const allBrands = await index_1.prisma.brand.findMany({ select: { name: true } });
+        const allCollections = await index_1.prisma.collection.findMany({ select: { name: true } });
+        // 2. Categories Reference Sheet
+        const catSheet = workbook.addWorksheet('Categories Reference');
+        catSheet.columns = [
+            { header: 'Valid Category L1', key: 'l1', width: 25 },
+            { header: 'Valid Category L2', key: 'l2', width: 25 },
+            { header: 'Valid Category L3', key: 'l3', width: 25 }
+        ];
+        catSheet.getRow(1).font = { bold: true };
+        allCats.forEach(c => {
+            let l1 = '', l2 = '', l3 = '';
+            if (!c.parentId)
+                l1 = c.slug;
+            else if (c.parent && !c.parent.parentId) {
+                l1 = c.parent.slug;
+                l2 = c.slug;
+            }
+            else if (c.parent?.parent) {
+                l1 = c.parent.parent.slug;
+                l2 = c.parent.slug;
+                l3 = c.slug;
+            }
+            catSheet.addRow({ l1, l2, l3 });
+        });
+        // 3. Brands Reference Sheet
+        const brandSheet = workbook.addWorksheet('Brands Reference');
+        brandSheet.columns = [{ header: 'Valid Brand Names', key: 'name', width: 30 }];
+        brandSheet.getRow(1).font = { bold: true };
+        allBrands.forEach(b => brandSheet.addRow({ name: b.name }));
+        // 4. Collections Reference Sheet
+        const collSheet = workbook.addWorksheet('Collections Reference');
+        collSheet.columns = [{ header: 'Valid Collection Names (comma separated)', key: 'name', width: 40 }];
+        collSheet.getRow(1).font = { bold: true };
+        allCollections.forEach(c => collSheet.addRow({ name: c.name }));
         return workbook;
     }
     static async importProducts(file) {
@@ -357,74 +446,91 @@ class ProductService {
         const allCats = await index_1.prisma.category.findMany();
         const allCollections = await index_1.prisma.collection.findMany();
         for (const row of records) {
-            if (!row.name || !row.slug) {
-                results.errors.push(`Row skipped: missing required 'name' or 'slug'. Row data: ${JSON.stringify(row)}`);
+            if (!row.name) {
+                results.errors.push(`Row skipped: missing required 'name'. Row data: ${JSON.stringify(row)}`);
                 continue;
             }
-            const safeSlug = row.slug.toLowerCase().replace(/[^a-z0-9-_]/g, '-');
+            if (!row.slug) {
+                row.slug = row.name.toLowerCase().replace(/[^a-z0-9-_]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+            }
+            const safeSlug = row.slug.toLowerCase().replace(/[^a-z0-9-_]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
             let categoryId = null;
             let parentId = null;
             let foundNode = null;
-            if (row.category_l1) {
-                foundNode = allCats.find((c) => c.name.toLowerCase() === row.category_l1.toLowerCase() && !c.parentId);
+            if (row['category_l1 (slug)'] || row.category_l1) {
+                const l1Slug = (row['category_l1 (slug)'] || row.category_l1).trim().toLowerCase();
+                foundNode = allCats.find((c) => c.slug.trim().toLowerCase() === l1Slug && !c.parentId);
                 if (foundNode)
                     parentId = foundNode.id;
             }
-            if (row.category_l2 && parentId) {
-                let sub = allCats.find((c) => c.name.toLowerCase() === row.category_l2.toLowerCase() && c.parentId === parentId);
+            if ((row['category_l2 (slug)'] || row.category_l2) && parentId) {
+                const l2Slug = (row['category_l2 (slug)'] || row.category_l2).trim().toLowerCase();
+                let sub = allCats.find((c) => c.slug.trim().toLowerCase() === l2Slug && c.parentId === parentId);
                 if (sub) {
                     foundNode = sub;
                     parentId = sub.id;
                 }
             }
-            if (row.category_l3 && parentId) {
-                let subsub = allCats.find((c) => c.name.toLowerCase() === row.category_l3.toLowerCase() && c.parentId === parentId);
+            if ((row['category_l3 (slug)'] || row.category_l3) && parentId) {
+                const l3Slug = (row['category_l3 (slug)'] || row.category_l3).trim().toLowerCase();
+                let subsub = allCats.find((c) => c.slug.trim().toLowerCase() === l3Slug && c.parentId === parentId);
                 if (subsub)
                     foundNode = subsub;
             }
-            categoryId = foundNode?.id;
+            // Fallback: If strict hierarchy fails, just try to find ANY category matching the deepest provided slug
+            if (!foundNode) {
+                const querySlug = (row['category_l3 (slug)'] || row.category_l3 || row['category_l2 (slug)'] || row.category_l2 || row['category_l1 (slug)'] || row.category_l1 || '').trim().toLowerCase();
+                if (querySlug) {
+                    foundNode = allCats.find((c) => c.slug.trim().toLowerCase() === querySlug);
+                }
+            }
+            categoryId = foundNode?.id || null;
             let collectionConnections = [];
             if (row.collections) {
                 const collectionNames = row.collections.split(',').map((name) => name.trim().toLowerCase()).filter(Boolean);
                 const matchedCollections = allCollections.filter((c) => collectionNames.includes(c.name.toLowerCase()));
                 collectionConnections = matchedCollections.map((c) => ({ id: c.id }));
             }
-            if (!categoryId) {
-                results.errors.push(`Row skipped: could not resolve valid category matching hierarchy for '${row.slug}'.`);
-                continue;
-            }
             const data = {
                 name: row.name,
                 brand: row.brand || '',
                 categoryId: categoryId,
-                price: parseFloat(row.price) || 0,
-                originalPrice: row.originalPrice ? parseFloat(row.originalPrice) : null,
+                price: parseFloat(row.price?.toString().replace(/[^0-9.]/g, '')) || 0,
+                originalPrice: row.originalPrice ? parseFloat(row.originalPrice?.toString().replace(/[^0-9.]/g, '')) : null,
                 stock: parseInt(row.stock) || 1,
                 status: (row.status || 'ACTIVE'),
                 isFeatured: String(row.isFeatured).toLowerCase() === 'true',
                 specs: typeof row.specs === 'string' ? row.specs : JSON.stringify(row.specs || {}),
                 description: row.description || '',
+                longDescription: row.longDescription || '',
                 metaTitle: row.metaTitle || null,
                 metaDescription: row.metaDescription || null,
                 metaKeywords: row.metaKeywords || null,
             };
             try {
                 let parsedImages = [];
+                const allImageUrls = new Set();
+                if (row.images) {
+                    row.images.split(',').forEach((url) => {
+                        if (url.trim())
+                            allImageUrls.add(url.trim());
+                    });
+                }
                 if (row._embeddedImages && row._embeddedImages.length > 0) {
-                    parsedImages = row._embeddedImages.map((url) => ({ url }));
+                    row._embeddedImages.forEach((url) => allImageUrls.add(url));
                 }
-                else if (row.images) {
-                    parsedImages = row.images.split(',').map((url) => ({ url: url.trim() })).filter((img) => img.url);
-                }
+                parsedImages = Array.from(allImageUrls).map(url => ({ url }));
                 const existing = await index_1.prisma.product.findUnique({ where: { slug: safeSlug }, include: { collections: true } });
                 if (existing) {
                     const existingCollectionIds = existing.collections.map((c) => c.id);
                     const newCollectionIds = collectionConnections.map((c) => c.id);
                     const columnsToDisconnect = existingCollectionIds.filter((id) => !newCollectionIds.includes(id)).map((id) => ({ id }));
+                    const { categoryId: rawCategoryId, ...restData } = data;
                     await index_1.prisma.product.update({
                         where: { id: existing.id },
                         data: {
-                            ...data,
+                            ...restData,
+                            categoryId: rawCategoryId,
                             ...(parsedImages.length > 0 ? { images: { deleteMany: {}, create: parsedImages } } : {}),
                             collections: {
                                 ...(columnsToDisconnect.length > 0 ? { disconnect: columnsToDisconnect } : {}),
@@ -435,10 +541,13 @@ class ProductService {
                     results.updated++;
                 }
                 else {
+                    const { categoryId: rawCategoryId, ...restData } = data;
                     await index_1.prisma.product.create({
                         data: {
-                            ...data,
+                            ...restData,
+                            categoryId: rawCategoryId,
                             slug: safeSlug,
+                            variations: [],
                             ...(parsedImages.length > 0 ? { images: { create: parsedImages } } : {}),
                             ...(collectionConnections.length > 0 ? { collections: { connect: collectionConnections } } : {})
                         }

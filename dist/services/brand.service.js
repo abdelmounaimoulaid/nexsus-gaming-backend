@@ -8,18 +8,55 @@ const index_1 = require("../index");
 const exceljs_1 = __importDefault(require("exceljs"));
 const sync_1 = require("csv-parse/sync");
 class BrandService {
-    static async getBrands() {
-        return await index_1.prisma.brand.findMany({
-            orderBy: { name: 'asc' },
-            select: {
-                id: true,
-                name: true,
-                slug: true,
-                logo: true,
-                description: true,
-                website: true
+    static async getBrands(query = {}) {
+        const page = parseInt(query.page) || 1;
+        const limit = parseInt(query.limit) || 20;
+        const skip = (page - 1) * limit;
+        const where = {};
+        if (query.search) {
+            where.OR = [
+                { name: { contains: query.search } },
+                { slug: { contains: query.search } }
+            ];
+        }
+        // Check if pagination is completely disabled (for dropdowns etc)
+        if (query.noPagination === 'true') {
+            const allBrands = await index_1.prisma.brand.findMany({
+                where,
+                orderBy: { name: 'asc' },
+                select: { id: true, name: true, slug: true, logo: true, description: true, website: true }
+            });
+            return {
+                data: allBrands,
+                meta: { total: allBrands.length, page: 1, limit: allBrands.length, totalPages: 1 }
+            };
+        }
+        const [brands, total] = await Promise.all([
+            index_1.prisma.brand.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { name: 'asc' },
+                select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                    logo: true,
+                    description: true,
+                    website: true
+                }
+            }),
+            index_1.prisma.brand.count({ where })
+        ]);
+        return {
+            data: brands,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
             }
-        });
+        };
     }
     static async getBrandById(id) {
         return await index_1.prisma.brand.findUnique({

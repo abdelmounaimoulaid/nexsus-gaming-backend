@@ -6,20 +6,22 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const crypto_1 = __importDefault(require("crypto"));
 const index_1 = require("../index");
+const customer_service_1 = require("./customer.service");
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret';
 class AuthService {
     static async login(email, password) {
         const user = await index_1.prisma.user.findUnique({
             where: { email },
-            include: { role: true }
+            include: { role: true, addresses: true }
         });
         if (!user) {
             throw new Error('Invalid credentials');
         }
-        // Only allow login if user has an assigned role
-        if (!user.roleId) {
-            throw new Error('Access denied: Customers cannot log in to the admin panel.');
+        // Only allow login if user has an assigned role or is a regular customer
+        if (!user.roleId && user.systemRole !== 'USER') {
+            throw new Error('Access denied: Unauthorized login attempt.');
         }
         const isMatch = await bcryptjs_1.default.compare(password, user.password);
         if (!isMatch) {
@@ -35,6 +37,8 @@ class AuthService {
             id: user.id,
             systemRole: user.systemRole,
             email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
             permissions: roleData?.permissions || [],
             isSystem: roleData?.isSystem || false
         }, JWT_SECRET, { expiresIn: '1d' });
@@ -43,10 +47,88 @@ class AuthService {
             user: {
                 id: user.id,
                 email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                phone: user.phone,
                 systemRole: user.systemRole,
-                role: roleData
+                role: roleData,
+                addresses: user.addresses || []
             }
         };
+    }
+    static async register(data) {
+        const { email } = data;
+        const existing = await customer_service_1.CustomerService.checkEmailExists(email);
+        if (existing) {
+            throw new Error('Email already registered');
+        }
+        // CustomerService.createCustomer handles User creation if password is provided
+        const result = await customer_service_1.CustomerService.createCustomer({
+            ...data,
+            customerType: 'INDIVIDUAL'
+        });
+        // Generate token for immediate login
+        const user = await index_1.prisma.user.findUnique({ where: { email } });
+        const token = jsonwebtoken_1.default.sign({
+            id: user.id,
+            systemRole: user.systemRole,
+            email: user.email,
+            permissions: [],
+            isSystem: false
+        }, JWT_SECRET, { expiresIn: '1d' });
+        return {
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                phone: user.phone,
+                systemRole: user.systemRole,
+                role: null,
+                addresses: []
+            }
+        };
+    }
+    static async requestPasswordReset(email) {
+        const user = await index_1.prisma.user.findUnique({ where: { email } });
+        if (!user) {
+            // Don't leak if email exists or not for security, but for now we follow simple logic
+            throw new Error('User not found');
+        }
+        const token = crypto_1.default.randomBytes(32).toString('hex');
+        const expires = new Date(Date.now() + 3600000); // 1 hour
+        await index_1.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                resetToken: token,
+                resetTokenExpires: expires
+            }
+        });
+        // TODO: Send email. For now, we expect the user to manually handle it or log it.
+        console.log(`Password reset token for ${email}: ${token}`);
+        return { success: true, message: 'Reset token generated', token }; // Returning token for easy testing/integration without real email service
+    }
+    static async resetPassword(token, newPass) {
+        const user = await index_1.prisma.user.findFirst({
+            where: {
+                resetToken: token,
+                resetTokenExpires: { gt: new Date() }
+            }
+        });
+        if (!user) {
+            throw new Error('Invalid or expired reset token');
+        }
+        const hashedNewPassword = await bcryptjs_1.default.hash(newPass, 10);
+        await index_1.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                password: hashedNewPassword,
+                resetToken: null,
+                resetTokenExpires: null
+            }
+        });
+        return { success: true, message: 'Password reset successfully' };
     }
     static async changePassword(userId, currentPass, newPass) {
         const user = await index_1.prisma.user.findUnique({

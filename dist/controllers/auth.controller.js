@@ -20,6 +20,44 @@ class AuthController {
             return res.status(500).json({ message: 'Server error' });
         }
     }
+    static async register(req, res) {
+        try {
+            const result = await auth_service_1.AuthService.register(req.body);
+            return res.json(result);
+        }
+        catch (error) {
+            console.error('Registration error:', error);
+            return res.status(400).json({ message: error.message });
+        }
+    }
+    static async forgotPassword(req, res) {
+        try {
+            const { email } = req.body;
+            if (!email) {
+                return res.status(400).json({ message: 'Email is required' });
+            }
+            const result = await auth_service_1.AuthService.requestPasswordReset(email);
+            return res.json(result);
+        }
+        catch (error) {
+            console.error('Forgot password error:', error);
+            return res.status(400).json({ message: error.message });
+        }
+    }
+    static async resetPassword(req, res) {
+        try {
+            const { token, newPassword } = req.body;
+            if (!token || !newPassword) {
+                return res.status(400).json({ message: 'Token and new password are required' });
+            }
+            const result = await auth_service_1.AuthService.resetPassword(token, newPassword);
+            return res.json(result);
+        }
+        catch (error) {
+            console.error('Reset password error:', error);
+            return res.status(400).json({ message: error.message });
+        }
+    }
     static async changePassword(req, res) {
         try {
             const { currentPassword, newPassword } = req.body;

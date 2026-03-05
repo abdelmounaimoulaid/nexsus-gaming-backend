@@ -22,6 +22,44 @@ export class AuthController {
         }
     }
 
+    static async register(req: Request, res: Response) {
+        try {
+            const result = await AuthService.register(req.body);
+            return res.json(result);
+        } catch (error: any) {
+            console.error('Registration error:', error);
+            return res.status(400).json({ message: error.message });
+        }
+    }
+
+    static async forgotPassword(req: Request, res: Response) {
+        try {
+            const { email } = req.body;
+            if (!email) {
+                return res.status(400).json({ message: 'Email is required' });
+            }
+            const result = await AuthService.requestPasswordReset(email);
+            return res.json(result);
+        } catch (error: any) {
+            console.error('Forgot password error:', error);
+            return res.status(400).json({ message: error.message });
+        }
+    }
+
+    static async resetPassword(req: Request, res: Response) {
+        try {
+            const { token, newPassword } = req.body;
+            if (!token || !newPassword) {
+                return res.status(400).json({ message: 'Token and new password are required' });
+            }
+            const result = await AuthService.resetPassword(token, newPassword);
+            return res.json(result);
+        } catch (error: any) {
+            console.error('Reset password error:', error);
+            return res.status(400).json({ message: error.message });
+        }
+    }
+
     static async changePassword(req: Request, res: Response) {
         try {
             const { currentPassword, newPassword } = req.body;

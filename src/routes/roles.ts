@@ -1,14 +1,14 @@
 import express from 'express';
-import { requireAuth } from '../middlewares/auth.middleware';
+import { requireAdmin } from '../middlewares/auth.middleware';
 import { RoleController } from '../controllers/role.controller';
 
 const router = express.Router();
 
-router.get('/', requireAuth, RoleController.getRoles);
-router.get('/:id', requireAuth, RoleController.getRoleById);
+router.get('/', requireAdmin, RoleController.getRoles);
+router.get('/:id', requireAdmin, RoleController.getRoleById);
 
-router.post('/', requireAuth, RoleController.createRole);
-router.patch('/:id', requireAuth, RoleController.updateRole);
-router.delete('/:id', requireAuth, RoleController.deleteRole);
+router.post('/', requireAdmin, RoleController.createRole);
+router.patch('/:id', requireAdmin, RoleController.updateRole);
+router.delete('/:id', requireAdmin, RoleController.deleteRole);
 
 export default router;

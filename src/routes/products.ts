@@ -8,6 +8,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 router.get('/', ProductController.getProducts);
 router.get('/export', requireAuth, ProductController.exportProducts);
+router.get('/export-template', requireAuth, ProductController.exportImportTemplate);
 router.get('/:id', ProductController.getProductById);
 
 router.post('/', requireAuth, ProductController.createProduct);

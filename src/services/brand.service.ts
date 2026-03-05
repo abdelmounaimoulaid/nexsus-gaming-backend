@@ -3,18 +3,59 @@ import ExcelJS from 'exceljs';
 import { parse } from 'csv-parse/sync';
 
 export class BrandService {
-    static async getBrands() {
-        return await prisma.brand.findMany({
-            orderBy: { name: 'asc' },
-            select: {
-                id: true,
-                name: true,
-                slug: true,
-                logo: true,
-                description: true,
-                website: true
+    static async getBrands(query: any = {}) {
+        const page = parseInt(query.page as string) || 1;
+        const limit = parseInt(query.limit as string) || 20;
+        const skip = (page - 1) * limit;
+
+        const where: any = {};
+        if (query.search) {
+            where.OR = [
+                { name: { contains: query.search } },
+                { slug: { contains: query.search } }
+            ];
+        }
+
+        // Check if pagination is completely disabled (for dropdowns etc)
+        if (query.noPagination === 'true') {
+            const allBrands = await prisma.brand.findMany({
+                where,
+                orderBy: { name: 'asc' },
+                select: { id: true, name: true, slug: true, logo: true, description: true, website: true }
+            });
+            return {
+                data: allBrands,
+                meta: { total: allBrands.length, page: 1, limit: allBrands.length, totalPages: 1 }
+            };
+        }
+
+        const [brands, total] = await Promise.all([
+            prisma.brand.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { name: 'asc' },
+                select: {
+                    id: true,
+                    name: true,
+                    slug: true,
+                    logo: true,
+                    description: true,
+                    website: true
+                }
+            }),
+            prisma.brand.count({ where })
+        ]);
+
+        return {
+            data: brands,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
             }
-        });
+        };
     }
 
     static async getBrandById(id: string) {

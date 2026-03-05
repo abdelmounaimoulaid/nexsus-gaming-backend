@@ -11,6 +11,7 @@ const router = express_1.default.Router();
 const upload = (0, multer_1.default)({ storage: multer_1.default.memoryStorage() });
 router.get('/', product_controller_1.ProductController.getProducts);
 router.get('/export', auth_middleware_1.requireAuth, product_controller_1.ProductController.exportProducts);
+router.get('/export-template', auth_middleware_1.requireAuth, product_controller_1.ProductController.exportImportTemplate);
 router.get('/:id', product_controller_1.ProductController.getProductById);
 router.post('/', auth_middleware_1.requireAuth, product_controller_1.ProductController.createProduct);
 router.put('/:id', auth_middleware_1.requireAuth, product_controller_1.ProductController.updateProduct);

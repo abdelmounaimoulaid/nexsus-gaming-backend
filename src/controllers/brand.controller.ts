@@ -4,7 +4,7 @@ import { BrandService } from '../services/brand.service';
 export class BrandController {
     static async getBrands(req: Request, res: Response) {
         try {
-            const brands = await BrandService.getBrands();
+            const brands = await BrandService.getBrands(req.query);
             res.json(brands);
         } catch (e) {
             res.status(500).json({ message: 'Failed to fetch brands', error: String(e) });

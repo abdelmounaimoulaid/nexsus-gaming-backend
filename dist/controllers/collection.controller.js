@@ -5,7 +5,7 @@ const collection_service_1 = require("../services/collection.service");
 class CollectionController {
     static async getCollections(req, res) {
         try {
-            const collections = await collection_service_1.CollectionService.getCollections();
+            const collections = await collection_service_1.CollectionService.getCollections(req.query);
             res.json(collections);
         }
         catch (e) {

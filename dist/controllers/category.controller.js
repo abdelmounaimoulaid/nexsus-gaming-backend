@@ -39,7 +39,7 @@ class CategoryController {
             res.json({ success: true });
         }
         catch (error) {
-            res.status(400).json({ message: 'Failed to delete category' });
+            res.status(400).json({ message: error.message || 'Failed to delete category' });
         }
     }
     static async exportCategories(req, res) {

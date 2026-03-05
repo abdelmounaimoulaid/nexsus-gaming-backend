@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+dotenv.config();
 import path from 'path';
 import { PrismaClient } from '@prisma/client';
 import helmet from 'helmet';
@@ -19,7 +20,11 @@ import rolesRoutes from './routes/roles';
 import customersRoutes from './routes/customers';
 import companiesRoutes from './routes/companies';
 import settingsRoutes from './routes/settingsRoutes';
-dotenv.config();
+import whishlistRoutes from './routes/whishlist';
+import couponRoutes from './routes/coupons';
+import orderRoutes from './routes/orders';
+import addressRoutes from './routes/addresses';
+import inventoryRoutes from './routes/inventory';
 
 // Ensure JWT_SECRET is not the dummy dev value in production
 if (process.env.NODE_ENV === 'production' && process.env.JWT_SECRET === 'NEXUS_GAMING_SUPER_SECRET_KEY_FOR_JWT_DEV_ONLY') {
@@ -73,7 +78,7 @@ app.use(express.json({ limit: '1mb' }));
 
 // Set up Global Rate Limiter
 const globalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
+    // windowMs: 15 * 60 * 1000, // 15 minutes
     max: 1000, // Increased from 100 to 1000 to prevent issues during development/active use
     standardHeaders: true,
     legacyHeaders: false,
@@ -109,6 +114,11 @@ app.use('/api/roles', rolesRoutes);
 app.use('/api/customers', customersRoutes);
 app.use('/api/companies', companiesRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/whishlist', whishlistRoutes);
+app.use('/api/coupons', couponRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/addresses', addressRoutes);
+app.use('/api/inventory', inventoryRoutes);
 
 // Root Welcome Route
 app.get('/', (req, res) => {

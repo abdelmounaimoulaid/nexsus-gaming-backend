@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { getSettings, updateSettings } from '../controllers/settingsController';
-import { requireAuth } from '../middlewares/auth.middleware';
+import { requireAdmin } from '../middlewares/auth.middleware';
 
 const router = Router();
 
@@ -8,6 +8,6 @@ const router = Router();
 router.get('/', getSettings);
 
 // Protected admin route to save global site settings
-router.put('/', requireAuth, updateSettings);
+router.put('/', requireAdmin, updateSettings);
 
 export default router;

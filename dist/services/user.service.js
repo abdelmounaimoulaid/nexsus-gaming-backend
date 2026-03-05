@@ -8,24 +8,41 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const index_1 = require("../index");
 class UserService {
     static async getUsers(query) {
+        const page = parseInt(query.page) || 1;
+        const limit = parseInt(query.limit) || 20;
+        const skip = (page - 1) * limit;
         const { search, roleId } = query;
-        const where = { roleId: { not: null } };
+        const where = {};
         if (roleId) {
             where.roleId = roleId;
         }
         if (search) {
             where.email = { contains: String(search) };
         }
-        return await index_1.prisma.user.findMany({
-            where,
-            select: {
-                id: true, email: true, systemRole: true, roleName: true, createdAt: true, updatedAt: true,
-                role: { select: { id: true, name: true, isSystem: true, icon: true, color: true } },
-                createdBy: { select: { id: true, email: true, firstName: true, lastName: true } },
-                updatedBy: { select: { id: true, email: true, firstName: true, lastName: true } }
-            },
-            orderBy: { createdAt: 'desc' }
-        });
+        const [users, total] = await Promise.all([
+            index_1.prisma.user.findMany({
+                where,
+                skip,
+                take: limit,
+                select: {
+                    id: true, email: true, systemRole: true, roleName: true, createdAt: true, updatedAt: true,
+                    role: { select: { id: true, name: true, isSystem: true, icon: true, color: true } },
+                    createdBy: { select: { id: true, email: true, firstName: true, lastName: true } },
+                    updatedBy: { select: { id: true, email: true, firstName: true, lastName: true } }
+                },
+                orderBy: { createdAt: 'desc' }
+            }),
+            index_1.prisma.user.count({ where })
+        ]);
+        return {
+            data: users,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        };
     }
     static async createUser(data, authorId) {
         const { email, password, systemRole, roleId } = data;

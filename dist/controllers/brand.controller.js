@@ -5,7 +5,7 @@ const brand_service_1 = require("../services/brand.service");
 class BrandController {
     static async getBrands(req, res) {
         try {
-            const brands = await brand_service_1.BrandService.getBrands();
+            const brands = await brand_service_1.BrandService.getBrands(req.query);
             res.json(brands);
         }
         catch (e) {

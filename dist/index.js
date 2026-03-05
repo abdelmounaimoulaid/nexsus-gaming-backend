@@ -7,6 +7,7 @@ exports.app = exports.prisma = void 0;
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
 const path_1 = __importDefault(require("path"));
 const client_1 = require("@prisma/client");
 const helmet_1 = __importDefault(require("helmet"));
@@ -24,7 +25,11 @@ const roles_1 = __importDefault(require("./routes/roles"));
 const customers_1 = __importDefault(require("./routes/customers"));
 const companies_1 = __importDefault(require("./routes/companies"));
 const settingsRoutes_1 = __importDefault(require("./routes/settingsRoutes"));
-dotenv_1.default.config();
+const whishlist_1 = __importDefault(require("./routes/whishlist"));
+const coupons_1 = __importDefault(require("./routes/coupons"));
+const orders_1 = __importDefault(require("./routes/orders"));
+const addresses_1 = __importDefault(require("./routes/addresses"));
+const inventory_1 = __importDefault(require("./routes/inventory"));
 // Ensure JWT_SECRET is not the dummy dev value in production
 if (process.env.NODE_ENV === 'production' && process.env.JWT_SECRET === 'NEXUS_GAMING_SUPER_SECRET_KEY_FOR_JWT_DEV_ONLY') {
     console.warn('⚠️ SECURITY WARNING: You are running in production using the default dev JWT_SECRET. Please change it in your Hostinger .env file ASAP!');
@@ -70,7 +75,7 @@ app.use((0, cors_1.default)({
 app.use(express_1.default.json({ limit: '1mb' }));
 // Set up Global Rate Limiter
 const globalLimiter = (0, express_rate_limit_1.default)({
-    windowMs: 15 * 60 * 1000, // 15 minutes
+    // windowMs: 15 * 60 * 1000, // 15 minutes
     max: 1000, // Increased from 100 to 1000 to prevent issues during development/active use
     standardHeaders: true,
     legacyHeaders: false,
@@ -102,6 +107,11 @@ app.use('/api/roles', roles_1.default);
 app.use('/api/customers', customers_1.default);
 app.use('/api/companies', companies_1.default);
 app.use('/api/settings', settingsRoutes_1.default);
+app.use('/api/whishlist', whishlist_1.default);
+app.use('/api/coupons', coupons_1.default);
+app.use('/api/orders', orders_1.default);
+app.use('/api/addresses', addresses_1.default);
+app.use('/api/inventory', inventory_1.default);
 // Root Welcome Route
 app.get('/', (req, res) => {
     res.json({ status: 'ok', message: 'Nexus Gaming API is live on Vercel!' });

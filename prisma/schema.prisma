@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
   engineType = "library"
 }
 
@@ -9,118 +9,123 @@ datasource db {
 }
 
 model User {
-  id            String      @id @default(uuid())
-  email         String      @unique
-  password      String
-  systemRole    SystemRole  @default(ADMIN)
-  roleName      String?     @default("Admin")
-  
-  roleId        String?
-  role          Role?       @relation(fields: [roleId], references: [id])
-  
-  firstName     String?
-  lastName      String?
-  phone         String?
-  address       String?
-  city          String?
-  country       String?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  
-  createdById   String?
-  updatedById   String?
-  createdBy     User?       @relation("UserCreatedUsers", fields: [createdById], references: [id])
-  updatedBy     User?       @relation("UserUpdatedUsers", fields: [updatedById], references: [id])
-  
-  createdUsers  User[]      @relation("UserCreatedUsers")
-  updatedUsers  User[]      @relation("UserUpdatedUsers")
+  id                 String        @id @default(uuid())
+  email              String        @unique
+  password           String
+  systemRole         SystemRole    @default(ADMIN)
+  roleName           String?       @default("Admin")
+  roleId             String?
+  firstName          String?
+  lastName           String?
+  phone              String?
+  address            String?
+  city               String?
+  country            String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  createdById        String?
+  updatedById        String?
+  resetToken         String?       @unique
+  resetTokenExpires  DateTime?
+  addresses          Address[]
+  createdBrands      Brand[]       @relation("UserCreatedBrands")
+  updatedBrands      Brand[]       @relation("UserUpdatedBrands")
+  createdCategories  Category[]    @relation("UserCreatedCategories")
+  updatedCategories  Category[]    @relation("UserUpdatedCategories")
+  createdCollections Collection[]  @relation("UserCreatedCollections")
+  updatedCollections Collection[]  @relation("UserUpdatedCollections")
+  createdCompanies   Company[]     @relation("UserCreatedCompanies")
+  updatedCompanies   Company[]     @relation("UserUpdatedCompanies")
+  couponUsages       CouponUsage[]
+  createdCustomers   Customer[]    @relation("UserCreatedCustomers")
+  updatedCustomers   Customer[]    @relation("UserUpdatedCustomers")
+  customer           Customer?
+  favorites          Favorite[]
+  orders             Order[]
+  createdProducts    Product[]     @relation("UserCreatedProducts")
+  updatedProducts    Product[]     @relation("UserUpdatedProducts")
+  createdRoles       Role[]        @relation("UserCreatedRoles")
+  updatedRoles       Role[]        @relation("UserUpdatedRoles")
+  createdBy          User?         @relation("UserCreatedUsers", fields: [createdById], references: [id])
+  createdUsers       User[]        @relation("UserCreatedUsers")
+  role               Role?         @relation(fields: [roleId], references: [id])
+  updatedBy          User?         @relation("UserUpdatedUsers", fields: [updatedById], references: [id])
+  updatedUsers       User[]        @relation("UserUpdatedUsers")
 
-  customer      Customer?
-  
-  // Audit relations for other models
-  createdCustomers Customer[] @relation("UserCreatedCustomers")
-  updatedCustomers Customer[] @relation("UserUpdatedCustomers")
-  createdBrands     Brand[]      @relation("UserCreatedBrands")
-  updatedBrands     Brand[]      @relation("UserUpdatedBrands")
-  createdCategories Category[]   @relation("UserCreatedCategories")
-  updatedCategories Category[]   @relation("UserUpdatedCategories")
-  createdProducts   Product[]    @relation("UserCreatedProducts")
-  updatedProducts   Product[]    @relation("UserUpdatedProducts")
-  createdCollections Collection[] @relation("UserCreatedCollections")
-  updatedCollections Collection[] @relation("UserUpdatedCollections")
-  createdRoles      Role[]       @relation("UserCreatedRoles")
-  updatedRoles      Role[]       @relation("UserUpdatedRoles")
-  createdCompanies  Company[]    @relation("UserCreatedCompanies")
-  updatedCompanies  Company[]    @relation("UserUpdatedCompanies")
+  @@index([createdById], map: "User_createdById_fkey")
+  @@index([roleId], map: "User_roleId_fkey")
+  @@index([updatedById], map: "User_updatedById_fkey")
 }
 
 model Role {
   id          String   @id @default(uuid())
   name        String   @unique
   description String?
-  permissions Json     @default("[]")
+  permissions Json
   isSystem    Boolean  @default(false)
   icon        String?  @default("Shield")
   color       String?  @default("#E05727")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  users       User[]
-
   createdById String?
   updatedById String?
   createdBy   User?    @relation("UserCreatedRoles", fields: [createdById], references: [id])
   updatedBy   User?    @relation("UserUpdatedRoles", fields: [updatedById], references: [id])
+  users       User[]
+
+  @@index([createdById], map: "Role_createdById_fkey")
+  @@index([updatedById], map: "Role_updatedById_fkey")
 }
 
 model Company {
-  id                String   @id @default(uuid())
-  name              String
-  registrationNumber String?  // Info of company
-  industry          String?
-  website           String?
-  email             String?
-  phone             String?
-  address           String?
-  city              String?
-  country           String?
-  zipCode           String?
-  
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
-  customers         Customer[]
+  id                 String     @id @default(uuid())
+  name               String
+  registrationNumber String?
+  industry           String?
+  website            String?
+  email              String?
+  phone              String?
+  address            String?
+  city               String?
+  country            String?
+  zipCode            String?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  createdById        String?
+  updatedById        String?
+  createdBy          User?      @relation("UserCreatedCompanies", fields: [createdById], references: [id])
+  updatedBy          User?      @relation("UserUpdatedCompanies", fields: [updatedById], references: [id])
+  customers          Customer[]
 
-  createdById       String?
-  updatedById       String?
-  createdBy         User?    @relation("UserCreatedCompanies", fields: [createdById], references: [id])
-  updatedBy         User?    @relation("UserUpdatedCompanies", fields: [updatedById], references: [id])
+  @@index([createdById], map: "Company_createdById_fkey")
+  @@index([updatedById], map: "Company_updatedById_fkey")
 }
 
 model Customer {
-  id            String   @id @default(uuid())
-  email         String?  @unique
-  firstName     String?
-  lastName      String?
-  phone         String?
-  address       String?
-  city          String?
-  country       String?
-  zipCode       String?
-  customerType  String?  @default("INDIVIDUAL") // INDIVIDUAL, COMPANY
-  
-  companyId     String?
-  company       Company? @relation(fields: [companyId], references: [id])
+  id           String   @id @default(uuid())
+  email        String?  @unique
+  firstName    String?
+  lastName     String?
+  phone        String?
+  address      String?
+  city         String?
+  country      String?
+  zipCode      String?
+  customerType String?  @default("INDIVIDUAL")
+  companyId    String?
+  userId       String?  @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  createdById  String?
+  updatedById  String?
+  company      Company? @relation(fields: [companyId], references: [id])
+  createdBy    User?    @relation("UserCreatedCustomers", fields: [createdById], references: [id])
+  updatedBy    User?    @relation("UserUpdatedCustomers", fields: [updatedById], references: [id])
+  user         User?    @relation(fields: [userId], references: [id])
 
-  userId        String?  @unique
-  user          User?    @relation(fields: [userId], references: [id])
-
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  createdById   String?
-  updatedById   String?
-  createdBy     User?    @relation("UserCreatedCustomers", fields: [createdById], references: [id])
-  updatedBy     User?    @relation("UserUpdatedCustomers", fields: [updatedById], references: [id])
+  @@index([companyId], map: "Customer_companyId_fkey")
+  @@index([createdById], map: "Customer_createdById_fkey")
+  @@index([updatedById], map: "Customer_updatedById_fkey")
 }
 
 model Brand {
@@ -132,11 +137,13 @@ model Brand {
   website     String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
   createdById String?
   updatedById String?
   createdBy   User?    @relation("UserCreatedBrands", fields: [createdById], references: [id])
   updatedBy   User?    @relation("UserUpdatedBrands", fields: [updatedById], references: [id])
+
+  @@index([createdById], map: "Brand_createdById_fkey")
+  @@index([updatedById], map: "Brand_updatedById_fkey")
 }
 
 model Category {
@@ -155,14 +162,17 @@ model Category {
   metaDescription String?
   metaKeywords    String?
   metaTitle       String?
-  parent          Category?  @relation("SubCategories", fields: [parentId], references: [id])
-  subCategories   Category[] @relation("SubCategories")
-  products        Product[]
-
   createdById     String?
   updatedById     String?
   createdBy       User?      @relation("UserCreatedCategories", fields: [createdById], references: [id])
+  parent          Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  subCategories   Category[] @relation("SubCategories")
   updatedBy       User?      @relation("UserUpdatedCategories", fields: [updatedById], references: [id])
+  products        Product[]
+
+  @@index([createdById], map: "Category_createdById_fkey")
+  @@index([parentId], map: "Category_parentId_fkey")
+  @@index([updatedById], map: "Category_updatedById_fkey")
 }
 
 model Product {
@@ -172,27 +182,48 @@ model Product {
   description     String
   price           Float
   originalPrice   Float?
-  categoryId      String
+  categoryId      String?
   brand           String
   stock           Int            @default(0)
   status          ProductStatus  @default(DRAFT)
   badge           String?
   isFeatured      Boolean        @default(false)
-  specs           Json           @default("{}")
-  variations      Json           @default("[]")
+  specs           Json
+  variations      Json
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   metaDescription String?
   metaKeywords    String?
   metaTitle       String?
-  category        Category       @relation(fields: [categoryId], references: [id])
+  createdById     String?
+  updatedById     String?
+  longDescription String?        @db.LongText
+  favoritedBy     Favorite[]
+  orderItems      OrderItem[]
+  category        Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdBy       User?          @relation("UserCreatedProducts", fields: [createdById], references: [id])
+  updatedBy       User?          @relation("UserUpdatedProducts", fields: [updatedById], references: [id])
   images          ProductImage[]
   collections     Collection[]   @relation("CollectionToProduct")
 
-  createdById     String?
-  updatedById     String?
-  createdBy       User?          @relation("UserCreatedProducts", fields: [createdById], references: [id])
-  updatedBy       User?          @relation("UserUpdatedProducts", fields: [updatedById], references: [id])
+  @@index([categoryId], map: "Product_categoryId_fkey")
+  @@index([createdById], map: "Product_createdById_fkey")
+  @@index([updatedById], map: "Product_updatedById_fkey")
+  @@index([createdAt])
+  @@index([status])
+  @@index([brand])
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([productId], map: "Favorite_productId_fkey")
 }
 
 model Collection {
@@ -206,12 +237,14 @@ model Collection {
   updatedAt    DateTime  @updatedAt
   color        String?
   showInNavbar Boolean   @default(false)
-  products     Product[] @relation("CollectionToProduct")
-
   createdById  String?
   updatedById  String?
   createdBy    User?     @relation("UserCreatedCollections", fields: [createdById], references: [id])
   updatedBy    User?     @relation("UserUpdatedCollections", fields: [updatedById], references: [id])
+  products     Product[] @relation("CollectionToProduct")
+
+  @@index([createdById], map: "Collection_createdById_fkey")
+  @@index([updatedById], map: "Collection_updatedById_fkey")
 }
 
 model ProductImage {
@@ -221,6 +254,8 @@ model ProductImage {
   isPrimary Boolean  @default(false)
   createdAt DateTime @default(now())
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId], map: "ProductImage_productId_fkey")
 }
 
 model Section {
@@ -229,7 +264,7 @@ model Section {
   type      SectionType
   sortOrder Int         @default(0)
   isActive  Boolean     @default(true)
-  config    Json        @default("{}")
+  config    Json
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 }
@@ -245,6 +280,102 @@ model Banner {
   status    String    @default("Active")
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+}
+
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String   @db.Text
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Coupon {
+  id             String        @id @default(uuid())
+  code           String        @unique
+  type           CouponType    @default(PERCENTAGE)
+  value          Float
+  minOrderAmount Float         @default(0)
+  startDate      DateTime?
+  endDate        DateTime?
+  usageLimit     Int?
+  usedCount      Int           @default(0)
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  usages         CouponUsage[]
+  orders         Order[]
+}
+
+model CouponUsage {
+  id       String   @id @default(uuid())
+  couponId String
+  userId   String
+  usedAt   DateTime @default(now())
+  coupon   Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([couponId])
+}
+
+model Order {
+  id             String        @id @default(uuid())
+  orderNumber    Int           @unique @default(autoincrement())
+  customerName   String
+  customerEmail  String
+  customerPhone  String
+  address        String?
+  city           String?
+  notes          String?       @db.Text
+  totalAmount    Float
+  discountAmount Float         @default(0)
+  finalAmount    Float
+  status         OrderStatus   @default(PENDING)
+  paymentMethod  PaymentMethod @default(PAYMENT_ON_DELIVERY)
+  userId         String?
+  couponId       String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  coupon         Coupon?       @relation(fields: [couponId], references: [id])
+  user           User?         @relation(fields: [userId], references: [id])
+  items          OrderItem[]
+
+  @@index([userId])
+  @@index([couponId])
+}
+
+model OrderItem {
+  id         String  @id @default(uuid())
+  orderId    String
+  productId  String
+  quantity   Int
+  price      Float
+  variations Json
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product    Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Address {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String?
+  firstName String?
+  lastName  String?
+  phone     String?
+  address   String
+  city      String
+  zipCode   String?
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 enum SystemRole {
@@ -271,11 +402,22 @@ enum SectionType {
   PROMO_BANNER
 }
 
-model SystemSetting {
-  id          String   @id @default(uuid())
-  key         String   @unique
-  value       String   @db.Text
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+enum CouponType {
+  PERCENTAGE
+  FIXED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  PAYMENT_ON_DELIVERY
+  BANK_TRANSFER
+  STORE_PICKUP
 }
