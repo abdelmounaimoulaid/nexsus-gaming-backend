@@ -78,10 +78,20 @@ export class ProductController {
             if (!req.file) {
                 return res.status(400).json({ message: 'No file uploaded.' });
             }
-            const results = await ProductService.importProducts(req.file);
-            res.json({ message: 'Import completed', results });
+
+            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Connection', 'keep-alive');
+
+            const results = await ProductService.importProducts(req.file, (current, total, currentResults) => {
+                res.write(`data: ${JSON.stringify({ type: 'progress', current, total, results: currentResults })}\n\n`);
+            });
+
+            res.write(`data: ${JSON.stringify({ type: 'complete', message: 'Import completed', results })}\n\n`);
+            res.end();
         } catch (error: any) {
-            res.status(500).json({ message: 'Import failed', detail: error?.message });
+            res.write(`data: ${JSON.stringify({ type: 'error', message: 'Import failed', detail: error?.message })}\n\n`);
+            res.end();
         }
     }
 

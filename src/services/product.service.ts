@@ -393,7 +393,7 @@ export class ProductService {
         return workbook;
     }
 
-    static async importProducts(file: Express.Multer.File) {
+    static async importProducts(file: Express.Multer.File, onProgress?: (current: number, total: number, results: any) => void) {
         const filename = file.originalname.toLowerCase();
         let records: any[] = [];
         const results = { created: 0, updated: 0, errors: [] as string[] };
@@ -459,7 +459,11 @@ export class ProductService {
         const allCats = await prisma.category.findMany();
         const allCollections = await prisma.collection.findMany();
 
+        const totalItems = records.length;
+        let currentItem = 0;
+
         for (const row of records) {
+            currentItem++;
             if (!row.name) {
                 results.errors.push(`Row skipped: missing required 'name'. Row data: ${JSON.stringify(row)}`);
                 continue;
@@ -577,6 +581,10 @@ export class ProductService {
                 }
             } catch (rowError: any) {
                 results.errors.push(`Failed to import product '${row.slug}': ${rowError.message}`);
+            }
+
+            if (onProgress) {
+                onProgress(currentItem, totalItems, results);
             }
         }
 

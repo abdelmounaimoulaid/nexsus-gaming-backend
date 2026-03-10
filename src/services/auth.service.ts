@@ -45,8 +45,14 @@ export class AuthService {
             isSystem: roleData?.isSystem || false
         }, JWT_SECRET, { expiresIn: '1d' });
 
+        const refreshToken = jwt.sign({
+            id: user.id,
+            type: 'refresh'
+        }, JWT_SECRET, { expiresIn: '7d' });
+
         return {
             token,
+            refreshToken,
             user: {
                 id: user.id,
                 email: user.email,
@@ -83,8 +89,14 @@ export class AuthService {
             isSystem: false
         }, JWT_SECRET, { expiresIn: '1d' });
 
+        const refreshToken = jwt.sign({
+            id: user.id,
+            type: 'refresh'
+        }, JWT_SECRET, { expiresIn: '7d' });
+
         return {
             token,
+            refreshToken,
             user: {
                 id: user.id,
                 email: user.email,
@@ -165,5 +177,62 @@ export class AuthService {
         });
 
         return { success: true, message: 'Password updated successfully' };
+    }
+
+    static async refreshToken(oldRefreshToken: string) {
+        try {
+            const decoded: any = jwt.verify(oldRefreshToken, JWT_SECRET);
+            if (decoded.type !== 'refresh') {
+                throw new Error('Invalid token type');
+            }
+
+            const user = await (prisma as any).user.findUnique({
+                where: { id: decoded.id },
+                include: { role: true, addresses: true }
+            });
+
+            if (!user) {
+                throw new Error('User not found');
+            }
+
+            const roleData = user.role ? {
+                id: user.role.id,
+                name: user.role.name,
+                permissions: user.role.permissions,
+                isSystem: user.role.isSystem
+            } : null;
+
+            const token = jwt.sign({
+                id: user.id,
+                systemRole: user.systemRole,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                permissions: roleData?.permissions || [],
+                isSystem: roleData?.isSystem || false
+            }, JWT_SECRET, { expiresIn: '1d' });
+
+            const refreshToken = jwt.sign({
+                id: user.id,
+                type: 'refresh'
+            }, JWT_SECRET, { expiresIn: '7d' });
+
+            return {
+                token,
+                refreshToken,
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    phone: user.phone,
+                    systemRole: user.systemRole,
+                    role: roleData,
+                    addresses: user.addresses || []
+                }
+            };
+        } catch (error) {
+            throw new Error('Invalid or expired refresh token');
+        }
     }
 }
