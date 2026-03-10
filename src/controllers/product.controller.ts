@@ -80,8 +80,10 @@ export class ProductController {
             }
 
             res.setHeader('Content-Type', 'text/event-stream');
-            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Cache-Control', 'no-cache, no-transform');
             res.setHeader('Connection', 'keep-alive');
+            res.setHeader('X-Accel-Buffering', 'no');
+            res.flushHeaders();
 
             const results = await ProductService.importProducts(req.file, (current, total, currentResults) => {
                 res.write(`data: ${JSON.stringify({ type: 'progress', current, total, results: currentResults })}\n\n`);
