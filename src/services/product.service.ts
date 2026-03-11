@@ -18,7 +18,7 @@ export class ProductService {
             where.id = { in: idList };
         }
 
-        // Category filtering (including sub-tree for each ID)
+        // Category filtering (including sub-tree for each ID or slug)
         if (categoryId) {
             const idList = String(categoryId).split(',').map(id => id.trim());
 
@@ -36,9 +36,12 @@ export class ProductService {
                     });
                 };
 
-                idList.forEach(id => {
-                    validCategoryIds.add(id);
-                    findDescendants(id);
+                idList.forEach(rawId => {
+                    // Resolve slug to real ID if needed
+                    const cat = allCats.find(c => c.id === rawId || c.slug === rawId);
+                    const resolvedId = cat ? cat.id : rawId;
+                    validCategoryIds.add(resolvedId);
+                    findDescendants(resolvedId);
                 });
 
                 where.categoryId = { in: Array.from(validCategoryIds) };
