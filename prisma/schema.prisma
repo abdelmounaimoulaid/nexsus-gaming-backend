@@ -153,6 +153,7 @@ model Category {
   nameEn          String?
   slug            String     @unique
   icon            String?
+  specSchema      String?
   parentId        String?
   menuGroup       String?
   sortOrder       Int        @default(0)

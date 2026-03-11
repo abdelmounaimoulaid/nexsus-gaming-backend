@@ -11,6 +11,7 @@ export class CategoryService {
             nameEn: true,
             slug: true,
             icon: true,
+            specSchema: true,
             visibility: true,
             sortOrder: true,
             parentId: true,
@@ -101,7 +102,7 @@ export class CategoryService {
     }
 
     static async createCategory(data: any, userId: string) {
-        const { name, nameFr, nameEn, slug, parentId, sortOrder, visibility, icon, metaTitle, metaDescription, metaKeywords } = data;
+        const { name, nameFr, nameEn, slug, parentId, sortOrder, visibility, icon, specSchema, metaTitle, metaDescription, metaKeywords } = data;
 
         // Verify user exists before setting audit fields
         const userExists = userId ? await (prisma as any).user.findUnique({ where: { id: userId } }) : null;
@@ -116,6 +117,7 @@ export class CategoryService {
                 sortOrder: sortOrder || 0,
                 visibility: visibility ?? true,
                 icon: icon || null,
+                specSchema: specSchema || null,
                 metaTitle: metaTitle || null,
                 metaDescription: metaDescription || null,
                 metaKeywords: metaKeywords || null,
@@ -127,7 +129,7 @@ export class CategoryService {
 
     static async updateCategory(id: string, data: any, userId: string) {
         const {
-            name, nameFr, nameEn, slug, icon, parentId, visibility,
+            name, nameFr, nameEn, slug, icon, specSchema, parentId, visibility,
             sortOrder, menuGroup, metaTitle, metaDescription, metaKeywords
         } = data;
 
@@ -142,6 +144,7 @@ export class CategoryService {
                 ...(nameEn !== undefined && { nameEn: nameEn || null }),
                 ...(slug !== undefined && { slug }),
                 ...(icon !== undefined && { icon: icon || null }),
+                ...(specSchema !== undefined && { specSchema: specSchema || null }),
                 ...(parentId !== undefined && { parentId: parentId || null }),
                 ...(visibility !== undefined && { visibility }),
                 ...(sortOrder !== undefined && { sortOrder: Number(sortOrder) }),
