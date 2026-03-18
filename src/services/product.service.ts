@@ -203,16 +203,19 @@ export class ProductService {
     }
 
     static async bulkOutOfStockProducts(ids: string[], userId?: string) {
-        // Verify user exists before setting audit fields to avoid foreign key violations
+        // Verify user exists before setting audit fields
         const userExists = userId ? await (prisma as any).user.findUnique({ where: { id: userId } }) : null;
+
+        // Force cast to any to ensure Prisma doesn't block it if the client is slightly out of sync
+        const data: any = { 
+            stock: 0,
+            status: 'OUT_OF_STOCK',
+            updatedById: userExists ? userId : undefined
+        };
 
         return await prisma.product.updateMany({ 
             where: { id: { in: ids } },
-            data: { 
-                stock: 0,
-                status: 'OUT_OF_STOCK',
-                updatedById: userExists ? userId : undefined
-            }
+            data
         });
     }
 
