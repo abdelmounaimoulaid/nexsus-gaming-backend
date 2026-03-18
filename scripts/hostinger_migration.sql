@@ -6,7 +6,10 @@
 -- We need to ensure orderNumber is an auto-incrementing integer for the new CDE- logic.
 ALTER TABLE `Order` MODIFY `orderNumber` INT(11) NOT NULL AUTO_INCREMENT;
 
--- 2. ADD MISSING 'Section' TABLE (For Homepage Management)
+-- 2. UPDATE PRODUCT STATUS ENUM (Add OUT_OF_STOCK)
+ALTER TABLE `Product` MODIFY `status` ENUM('DRAFT', 'ACTIVE', 'HIDDEN', 'OUT_OF_STOCK') NOT NULL DEFAULT 'DRAFT';
+
+-- 3. ADD MISSING 'Section' TABLE (For Homepage Management)
 CREATE TABLE IF NOT EXISTS `Section` (
   `id` VARCHAR(191) NOT NULL,
   `name` VARCHAR(191) NOT NULL,

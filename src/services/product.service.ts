@@ -210,7 +210,7 @@ export class ProductService {
             where: { id: { in: ids } },
             data: { 
                 stock: 0,
-                status: 'OUT_OF_STOCK' as any,
+                status: 'OUT_OF_STOCK',
                 updatedById: userExists ? userId : undefined
             }
         });

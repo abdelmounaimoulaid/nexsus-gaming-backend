@@ -389,6 +389,7 @@ enum ProductStatus {
   DRAFT
   ACTIVE
   HIDDEN
+  OUT_OF_STOCK
 }
 
 enum SectionType {
