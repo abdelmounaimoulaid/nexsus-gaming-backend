@@ -110,6 +110,20 @@ export class ProductController {
         }
     }
 
+    static async bulkOutOfStockProducts(req: Request, res: Response) {
+        try {
+            const { ids } = req.body;
+            if (!Array.isArray(ids) || ids.length === 0) {
+                return res.status(400).json({ message: 'No product IDs provided.' });
+            }
+            const userId = (req as any).user?.id;
+            const result = await ProductService.bulkOutOfStockProducts(ids, userId);
+            res.json({ success: true, count: result.count });
+        } catch (error) {
+            res.status(400).json({ message: 'Failed to bulk out-of-stock products', error: String(error) });
+        }
+    }
+
     static async deleteProduct(req: Request, res: Response) {
         try {
             await ProductService.deleteProduct(req.params.id as string);

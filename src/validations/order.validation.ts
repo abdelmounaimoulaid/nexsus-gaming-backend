@@ -35,8 +35,8 @@ export const createOrderSchema = z.object({
         items: z.array(z.object({
             productId: z.string().uuid(),
             quantity: z.number().int().positive(),
-            price: z.number().positive(),
-            variations: z.array(z.any()).optional()
+            price: z.number().positive().optional(),
+            variations: z.any().optional()
         })).min(1),
         couponCode: z.string().optional(),
     })

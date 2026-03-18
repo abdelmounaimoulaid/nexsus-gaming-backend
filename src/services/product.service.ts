@@ -202,6 +202,20 @@ export class ProductService {
         return await prisma.product.deleteMany({ where: { id: { in: ids } } });
     }
 
+    static async bulkOutOfStockProducts(ids: string[], userId?: string) {
+        // Verify user exists before setting audit fields to avoid foreign key violations
+        const userExists = userId ? await (prisma as any).user.findUnique({ where: { id: userId } }) : null;
+
+        return await prisma.product.updateMany({ 
+            where: { id: { in: ids } },
+            data: { 
+                stock: 0,
+                status: 'OUT_OF_STOCK' as any,
+                updatedById: userExists ? userId : undefined
+            }
+        });
+    }
+
     static async deleteProduct(id: string) {
         return await prisma.product.delete({ where: { id } });
     }

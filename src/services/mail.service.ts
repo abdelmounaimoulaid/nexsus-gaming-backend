@@ -57,6 +57,34 @@ export class MailService {
             </tr>
         `).join('');
 
+        const getBankInstructions = () => {
+            const ribInfo = process.env.BANK_RIB || '007 780 0000000000000000 00 (À remplacer dans .env)';
+            const advanceAmount = order.finalAmount * 0.2;
+            const remainingAmount = order.finalAmount - advanceAmount;
+
+            if (order.paymentMethod === 'PAYMENT_ON_DELIVERY' || order.paymentMethod === 'STORE_PICKUP') {
+                const methodText = order.paymentMethod === 'STORE_PICKUP' ? 'retrait au showroom' : 'paiement à la livraison';
+                const onPlaceText = order.paymentMethod === 'STORE_PICKUP' ? 'au showroom lors du retrait' : 'directement à la livraison';
+                return `
+                    <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                        <h3 style="color: #d97706; margin-top: 0; font-size: 16px;">Action requise : Avance de 20%</h3>
+                        <p style="margin-bottom: 5px;">Pour valider votre commande en ${methodText}, veuillez transférer <strong>${advanceAmount.toLocaleString('fr-FR')} DH</strong> (20%) sur notre compte bancaire :</p>
+                        <p style="font-family: monospace; font-size: 14px; background: #fff; padding: 10px; border: 1px solid #fde68a; border-radius: 4px; color: #1a1a1a;"><strong>RIB :</strong> ${ribInfo}</p>
+                        <p style="margin-top: 5px; margin-bottom: 0;">Le reste de <strong>${remainingAmount.toLocaleString('fr-FR')} DH</strong> sera payé ${onPlaceText}.</p>
+                    </div>
+                `;
+            } else if (order.paymentMethod === 'BANK_TRANSFER') {
+                return `
+                    <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                        <h3 style="color: #2563eb; margin-top: 0; font-size: 16px;">Virement Bancaire</h3>
+                        <p style="margin-bottom: 5px;">Votre commande sera traitée dès réception de votre virement du montant total de <strong>${order.finalAmount.toLocaleString('fr-FR')} DH</strong> sur notre compte :</p>
+                        <p style="font-family: monospace; font-size: 14px; background: #fff; padding: 10px; border: 1px solid #bfdbfe; border-radius: 4px; color: #1a1a1a;"><strong>RIB :</strong> ${ribInfo}</p>
+                    </div>
+                `;
+            }
+            return '';
+        };
+
         const getEmailTemplate = (title: string, greeting: string, showButton: boolean = true) => `
             <!DOCTYPE html>
             <html>
@@ -81,7 +109,7 @@ export class MailService {
                     <div class="content">
                         <h1 style="margin: 0 0 20px; font-size: 24px; color: #1a1a1a;">${title}</h1>
                         <p>${greeting}</p>
-                        <p>Commande <strong>#${order.orderNumber}</strong></p>
+                        <p>Commande <strong>#${order.id.split('-')[0].toUpperCase()}</strong></p>
                         
                         <div class="order-box">
                             <h2 style="margin: 0 0 15px; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; color: #64748b;">Récapitulatif</h2>
@@ -111,6 +139,7 @@ export class MailService {
                         ${order.city}</p>
 
                         <p><strong>Mode de paiement :</strong> ${readablePaymentMethod}</p>
+                        ${getBankInstructions()}
 
                         ${showButton ? `
                         <div style="text-align: center;">
@@ -130,11 +159,11 @@ export class MailService {
         const mailOptions = {
             from: `"Nexus Gaming" <${process.env.EMAIL_USER || 'noreply@nexus-gaming.com'}>`,
             to: order.customerEmail,
-            subject: `Confirmation de commande #${order.orderNumber} - Nexus Gaming`,
+            subject: `Confirmation de commande #${order.id.split('-')[0].toUpperCase()} - Nexus Gaming`,
             html: getEmailTemplate('Merci pour votre commande !', `Bonjour <strong>${order.customerName}</strong>, votre commande a été reçue avec succès et est en cours de traitement.`),
             attachments: [
                 {
-                    filename: `Commande_${order.orderNumber}.pdf`,
+                    filename: `Commande_${order.id.split('-')[0].toUpperCase()}.pdf`,
                     content: pdfBuffer
                 },
                 {
@@ -148,11 +177,11 @@ export class MailService {
         const adminMailOptions = {
             from: `"Nexus Gaming System" <${process.env.EMAIL_USER || 'noreply@nexus-gaming.com'}>`,
             to: adminEmail,
-            subject: `Nouvelle Commande Reçue #${order.orderNumber}`,
+            subject: `Nouvelle Commande Reçue #${order.id.split('-')[0].toUpperCase()}`,
             html: getEmailTemplate('Nouvelle Commande !', `Une nouvelle commande a été passée par <strong>${order.customerName}</strong> (${order.customerEmail}).`, false),
             attachments: [
                 {
-                    filename: `Commande_${order.orderNumber}.pdf`,
+                    filename: `Commande_${order.id.split('-')[0].toUpperCase()}.pdf`,
                     content: pdfBuffer
                 },
                 {
@@ -199,7 +228,7 @@ export class MailService {
                 .fontSize(20)
                 .text('INVOICE / FACTURE', 50, 100, { align: 'right' })
                 .fontSize(10)
-                .text(`Order # / Commande #: ${order.orderNumber}`, 50, 125, { align: 'right' })
+                .text(`Order # / Commande #: ${order.id.split('-')[0].toUpperCase()}`, 50, 125, { align: 'right' })
                 .text(`Date: ${new Date(order.createdAt).toLocaleDateString()}`, 50, 140, { align: 'right' })
                 .moveDown();
 

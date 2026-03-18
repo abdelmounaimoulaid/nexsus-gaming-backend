@@ -25,6 +25,7 @@ import couponRoutes from './routes/coupons';
 import orderRoutes from './routes/orders';
 import addressRoutes from './routes/addresses';
 import inventoryRoutes from './routes/inventory';
+import dashboardRoutes from './routes/dashboard';
 
 // Ensure JWT_SECRET is not the dummy dev value in production
 if (process.env.NODE_ENV === 'production' && process.env.JWT_SECRET === 'NEXUS_GAMING_SUPER_SECRET_KEY_FOR_JWT_DEV_ONLY') {
@@ -119,6 +120,7 @@ app.use('/api/coupons', couponRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Root Welcome Route
 app.get('/', (req, res) => {
