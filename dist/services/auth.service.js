@@ -42,8 +42,13 @@ class AuthService {
             permissions: roleData?.permissions || [],
             isSystem: roleData?.isSystem || false
         }, JWT_SECRET, { expiresIn: '1d' });
+        const refreshToken = jsonwebtoken_1.default.sign({
+            id: user.id,
+            type: 'refresh'
+        }, JWT_SECRET, { expiresIn: '7d' });
         return {
             token,
+            refreshToken,
             user: {
                 id: user.id,
                 email: user.email,
@@ -76,8 +81,13 @@ class AuthService {
             permissions: [],
             isSystem: false
         }, JWT_SECRET, { expiresIn: '1d' });
+        const refreshToken = jsonwebtoken_1.default.sign({
+            id: user.id,
+            type: 'refresh'
+        }, JWT_SECRET, { expiresIn: '7d' });
         return {
             token,
+            refreshToken,
             user: {
                 id: user.id,
                 email: user.email,
@@ -105,8 +115,6 @@ class AuthService {
                 resetTokenExpires: expires
             }
         });
-        // TODO: Send email. For now, we expect the user to manually handle it or log it.
-        console.log(`Password reset token for ${email}: ${token}`);
         return { success: true, message: 'Reset token generated', token }; // Returning token for easy testing/integration without real email service
     }
     static async resetPassword(token, newPass) {
@@ -147,6 +155,57 @@ class AuthService {
             data: { password: hashedNewPassword }
         });
         return { success: true, message: 'Password updated successfully' };
+    }
+    static async refreshToken(oldRefreshToken) {
+        try {
+            const decoded = jsonwebtoken_1.default.verify(oldRefreshToken, JWT_SECRET);
+            if (decoded.type !== 'refresh') {
+                throw new Error('Invalid token type');
+            }
+            const user = await index_1.prisma.user.findUnique({
+                where: { id: decoded.id },
+                include: { role: true, addresses: true }
+            });
+            if (!user) {
+                throw new Error('User not found');
+            }
+            const roleData = user.role ? {
+                id: user.role.id,
+                name: user.role.name,
+                permissions: user.role.permissions,
+                isSystem: user.role.isSystem
+            } : null;
+            const token = jsonwebtoken_1.default.sign({
+                id: user.id,
+                systemRole: user.systemRole,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                permissions: roleData?.permissions || [],
+                isSystem: roleData?.isSystem || false
+            }, JWT_SECRET, { expiresIn: '1d' });
+            const refreshToken = jsonwebtoken_1.default.sign({
+                id: user.id,
+                type: 'refresh'
+            }, JWT_SECRET, { expiresIn: '7d' });
+            return {
+                token,
+                refreshToken,
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    phone: user.phone,
+                    systemRole: user.systemRole,
+                    role: roleData,
+                    addresses: user.addresses || []
+                }
+            };
+        }
+        catch (error) {
+            throw new Error('Invalid or expired refresh token');
+        }
     }
 }
 exports.AuthService = AuthService;

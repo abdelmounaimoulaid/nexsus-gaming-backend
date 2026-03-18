@@ -16,6 +16,7 @@ router.get('/:id', product_controller_1.ProductController.getProductById);
 router.post('/', auth_middleware_1.requireAuth, product_controller_1.ProductController.createProduct);
 router.put('/:id', auth_middleware_1.requireAuth, product_controller_1.ProductController.updateProduct);
 router.post('/import', auth_middleware_1.requireAuth, upload.single('file'), product_controller_1.ProductController.importProducts);
+router.patch('/bulk/out-of-stock', auth_middleware_1.requireAuth, product_controller_1.ProductController.bulkOutOfStockProducts);
 router.delete('/bulk', auth_middleware_1.requireAuth, product_controller_1.ProductController.bulkDeleteProducts);
 router.delete('/:id', auth_middleware_1.requireAuth, product_controller_1.ProductController.deleteProduct);
 exports.default = router;

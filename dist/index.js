@@ -30,6 +30,7 @@ const coupons_1 = __importDefault(require("./routes/coupons"));
 const orders_1 = __importDefault(require("./routes/orders"));
 const addresses_1 = __importDefault(require("./routes/addresses"));
 const inventory_1 = __importDefault(require("./routes/inventory"));
+const dashboard_1 = __importDefault(require("./routes/dashboard"));
 // Ensure JWT_SECRET is not the dummy dev value in production
 if (process.env.NODE_ENV === 'production' && process.env.JWT_SECRET === 'NEXUS_GAMING_SUPER_SECRET_KEY_FOR_JWT_DEV_ONLY') {
     console.warn('⚠️ SECURITY WARNING: You are running in production using the default dev JWT_SECRET. Please change it in your Hostinger .env file ASAP!');
@@ -112,6 +113,7 @@ app.use('/api/coupons', coupons_1.default);
 app.use('/api/orders', orders_1.default);
 app.use('/api/addresses', addresses_1.default);
 app.use('/api/inventory', inventory_1.default);
+app.use('/api/dashboard', dashboard_1.default);
 // Root Welcome Route
 app.get('/', (req, res) => {
     res.json({ status: 'ok', message: 'Nexus Gaming API is live on Vercel!' });

@@ -8,7 +8,7 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret';
 const requireAuth = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
+    if (!token || token === 'null' || token === 'undefined') {
         return res.status(401).json({ message: 'Unauthorized: No token provided' });
     }
     try {
@@ -17,13 +17,16 @@ const requireAuth = (req, res, next) => {
         next();
     }
     catch (e) {
+        if (e.name === 'TokenExpiredError') {
+            return res.status(401).json({ message: 'Unauthorized: Token expired' });
+        }
         res.status(401).json({ message: 'Unauthorized: Invalid token' });
     }
 };
 exports.requireAuth = requireAuth;
 const optionalAuth = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
+    if (!token || token === 'null' || token === 'undefined') {
         return next();
     }
     try {
@@ -39,7 +42,7 @@ const optionalAuth = (req, res, next) => {
 exports.optionalAuth = optionalAuth;
 const requireAdmin = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
+    if (!token || token === 'null' || token === 'undefined') {
         return res.status(401).json({ message: 'Unauthorized: No token provided' });
     }
     try {
@@ -56,6 +59,9 @@ const requireAdmin = (req, res, next) => {
         next();
     }
     catch (e) {
+        if (e.name === 'TokenExpiredError') {
+            return res.status(401).json({ message: 'Unauthorized: Token expired' });
+        }
         res.status(401).json({ message: 'Unauthorized: Invalid token' });
     }
 };

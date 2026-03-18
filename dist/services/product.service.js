@@ -20,7 +20,7 @@ class ProductService {
             const idList = String(ids).split(',').map(id => id.trim());
             where.id = { in: idList };
         }
-        // Category filtering (including sub-tree for each ID)
+        // Category filtering (including sub-tree for each ID or slug)
         if (categoryId) {
             const idList = String(categoryId).split(',').map(id => id.trim());
             if (idList.includes('UNCATEGORIZED')) {
@@ -36,9 +36,12 @@ class ProductService {
                         findDescendants(s.id);
                     });
                 };
-                idList.forEach(id => {
-                    validCategoryIds.add(id);
-                    findDescendants(id);
+                idList.forEach(rawId => {
+                    // Resolve slug to real ID if needed
+                    const cat = allCats.find(c => c.id === rawId || c.slug === rawId);
+                    const resolvedId = cat ? cat.id : rawId;
+                    validCategoryIds.add(resolvedId);
+                    findDescendants(resolvedId);
                 });
                 where.categoryId = { in: Array.from(validCategoryIds) };
             }
@@ -105,6 +108,7 @@ class ProductService {
                 status: true,
                 badge: true,
                 isFeatured: true,
+                categoryId: true,
                 category: {
                     select: { id: true, name: true, slug: true }
                 },
@@ -185,6 +189,18 @@ class ProductService {
     }
     static async bulkDeleteProducts(ids) {
         return await index_1.prisma.product.deleteMany({ where: { id: { in: ids } } });
+    }
+    static async bulkOutOfStockProducts(ids, userId) {
+        // Verify user exists before setting audit fields to avoid foreign key violations
+        const userExists = userId ? await index_1.prisma.user.findUnique({ where: { id: userId } }) : null;
+        return await index_1.prisma.product.updateMany({
+            where: { id: { in: ids } },
+            data: {
+                stock: 0,
+                status: 'OUT_OF_STOCK',
+                updatedById: userExists ? userId : undefined
+            }
+        });
     }
     static async deleteProduct(id) {
         return await index_1.prisma.product.delete({ where: { id } });
@@ -375,7 +391,7 @@ class ProductService {
         allCollections.forEach(c => collSheet.addRow({ name: c.name }));
         return workbook;
     }
-    static async importProducts(file) {
+    static async importProducts(file, onProgress) {
         const filename = file.originalname.toLowerCase();
         let records = [];
         const results = { created: 0, updated: 0, errors: [] };
@@ -445,7 +461,10 @@ class ProductService {
         }
         const allCats = await index_1.prisma.category.findMany();
         const allCollections = await index_1.prisma.collection.findMany();
+        const totalItems = records.length;
+        let currentItem = 0;
         for (const row of records) {
+            currentItem++;
             if (!row.name) {
                 results.errors.push(`Row skipped: missing required 'name'. Row data: ${JSON.stringify(row)}`);
                 continue;
@@ -458,30 +477,30 @@ class ProductService {
             let parentId = null;
             let foundNode = null;
             if (row['category_l1 (slug)'] || row.category_l1) {
-                const l1Slug = (row['category_l1 (slug)'] || row.category_l1).trim().toLowerCase();
-                foundNode = allCats.find((c) => c.slug.trim().toLowerCase() === l1Slug && !c.parentId);
+                const query1 = (row['category_l1 (slug)'] || row.category_l1).trim().toLowerCase();
+                foundNode = allCats.find((c) => (c.slug.trim().toLowerCase() === query1 || c.name.trim().toLowerCase() === query1) && !c.parentId);
                 if (foundNode)
                     parentId = foundNode.id;
             }
             if ((row['category_l2 (slug)'] || row.category_l2) && parentId) {
-                const l2Slug = (row['category_l2 (slug)'] || row.category_l2).trim().toLowerCase();
-                let sub = allCats.find((c) => c.slug.trim().toLowerCase() === l2Slug && c.parentId === parentId);
+                const query2 = (row['category_l2 (slug)'] || row.category_l2).trim().toLowerCase();
+                let sub = allCats.find((c) => (c.slug.trim().toLowerCase() === query2 || c.name.trim().toLowerCase() === query2) && c.parentId === parentId);
                 if (sub) {
                     foundNode = sub;
                     parentId = sub.id;
                 }
             }
             if ((row['category_l3 (slug)'] || row.category_l3) && parentId) {
-                const l3Slug = (row['category_l3 (slug)'] || row.category_l3).trim().toLowerCase();
-                let subsub = allCats.find((c) => c.slug.trim().toLowerCase() === l3Slug && c.parentId === parentId);
+                const query3 = (row['category_l3 (slug)'] || row.category_l3).trim().toLowerCase();
+                let subsub = allCats.find((c) => (c.slug.trim().toLowerCase() === query3 || c.name.trim().toLowerCase() === query3) && c.parentId === parentId);
                 if (subsub)
                     foundNode = subsub;
             }
-            // Fallback: If strict hierarchy fails, just try to find ANY category matching the deepest provided slug
+            // Fallback: If strict hierarchy fails, just try to find ANY category matching the deepest provided slug/name
             if (!foundNode) {
-                const querySlug = (row['category_l3 (slug)'] || row.category_l3 || row['category_l2 (slug)'] || row.category_l2 || row['category_l1 (slug)'] || row.category_l1 || '').trim().toLowerCase();
-                if (querySlug) {
-                    foundNode = allCats.find((c) => c.slug.trim().toLowerCase() === querySlug);
+                const queryAny = (row['category_l3 (slug)'] || row.category_l3 || row['category_l2 (slug)'] || row.category_l2 || row['category_l1 (slug)'] || row.category_l1 || '').trim().toLowerCase();
+                if (queryAny && queryAny !== 'uncategorized') {
+                    foundNode = allCats.find((c) => c.slug.trim().toLowerCase() === queryAny || c.name.trim().toLowerCase() === queryAny);
                 }
             }
             categoryId = foundNode?.id || null;
@@ -557,6 +576,9 @@ class ProductService {
             }
             catch (rowError) {
                 results.errors.push(`Failed to import product '${row.slug}': ${rowError.message}`);
+            }
+            if (onProgress) {
+                onProgress(currentItem, totalItems, results);
             }
         }
         return results;

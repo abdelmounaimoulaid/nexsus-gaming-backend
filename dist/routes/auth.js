@@ -12,4 +12,5 @@ router.post('/register', auth_controller_1.AuthController.register);
 router.post('/forgot-password', auth_controller_1.AuthController.forgotPassword);
 router.post('/reset-password', auth_controller_1.AuthController.resetPassword);
 router.put('/change-password', auth_middleware_1.requireAuth, auth_controller_1.AuthController.changePassword);
+router.post('/refresh', auth_controller_1.AuthController.refreshToken);
 exports.default = router;

@@ -75,11 +75,20 @@ class ProductController {
             if (!req.file) {
                 return res.status(400).json({ message: 'No file uploaded.' });
             }
-            const results = await product_service_1.ProductService.importProducts(req.file);
-            res.json({ message: 'Import completed', results });
+            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Cache-Control', 'no-cache, no-transform');
+            res.setHeader('Connection', 'keep-alive');
+            res.setHeader('X-Accel-Buffering', 'no');
+            res.flushHeaders();
+            const results = await product_service_1.ProductService.importProducts(req.file, (current, total, currentResults) => {
+                res.write(`data: ${JSON.stringify({ type: 'progress', current, total, results: currentResults })}\n\n`);
+            });
+            res.write(`data: ${JSON.stringify({ type: 'complete', message: 'Import completed', results })}\n\n`);
+            res.end();
         }
         catch (error) {
-            res.status(500).json({ message: 'Import failed', detail: error?.message });
+            res.write(`data: ${JSON.stringify({ type: 'error', message: 'Import failed', detail: error?.message })}\n\n`);
+            res.end();
         }
     }
     static async bulkDeleteProducts(req, res) {
@@ -93,6 +102,20 @@ class ProductController {
         }
         catch (error) {
             res.status(400).json({ message: 'Failed to bulk delete products', error: String(error) });
+        }
+    }
+    static async bulkOutOfStockProducts(req, res) {
+        try {
+            const { ids } = req.body;
+            if (!Array.isArray(ids) || ids.length === 0) {
+                return res.status(400).json({ message: 'No product IDs provided.' });
+            }
+            const userId = req.user?.id;
+            const result = await product_service_1.ProductService.bulkOutOfStockProducts(ids, userId);
+            res.json({ success: true, count: result.count });
+        }
+        catch (error) {
+            res.status(400).json({ message: 'Failed to bulk out-of-stock products', error: String(error) });
         }
     }
     static async deleteProduct(req, res) {

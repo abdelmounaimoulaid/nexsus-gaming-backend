@@ -34,8 +34,8 @@ exports.createOrderSchema = zod_1.z.object({
         items: zod_1.z.array(zod_1.z.object({
             productId: zod_1.z.string().uuid(),
             quantity: zod_1.z.number().int().positive(),
-            price: zod_1.z.number().positive(),
-            variations: zod_1.z.array(zod_1.z.any()).optional()
+            price: zod_1.z.number().positive().optional(),
+            variations: zod_1.z.any().optional()
         })).min(1),
         couponCode: zod_1.z.string().optional(),
     })

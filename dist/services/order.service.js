@@ -131,31 +131,40 @@ class OrderService {
         const skip = (page - 1) * limit;
         const where = {};
         if (query.search) {
+            // Strip common prefixes like # or CDE- so the user can search by what they see
+            const cleanSearch = query.search.trim()
+                .replace(/^#/, '')
+                .replace(/^CDE-/i, '');
             where.OR = [
-                { orderNumber: { contains: query.search } },
+                { id: { contains: cleanSearch } },
                 { customerName: { contains: query.search } },
                 { customerEmail: { contains: query.search } }
             ];
+            // If search is a valid number (or was after stripping #), also search by old orderNumber Reference
+            const parsedNum = parseInt(cleanSearch);
+            if (!isNaN(parsedNum) && /^\d+$/.test(cleanSearch)) {
+                where.OR.push({ orderNumber: parsedNum });
+            }
         }
         const [orders, total] = await Promise.all([
             index_1.prisma.order.findMany({
                 where,
                 skip,
                 take: limit,
-                include: {
-                    items: {
-                        include: {
-                            product: true
-                        }
-                    },
-                    user: {
-                        select: {
-                            id: true,
-                            firstName: true,
-                            lastName: true,
-                            email: true
-                        }
-                    }
+                select: {
+                    id: true,
+                    orderNumber: true,
+                    customerName: true,
+                    customerEmail: true,
+                    customerPhone: true,
+                    address: true,
+                    city: true,
+                    totalAmount: true,
+                    discountAmount: true,
+                    finalAmount: true,
+                    status: true,
+                    paymentMethod: true,
+                    createdAt: true
                 },
                 orderBy: { createdAt: 'desc' }
             }),

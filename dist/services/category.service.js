@@ -16,6 +16,7 @@ class CategoryService {
             nameEn: true,
             slug: true,
             icon: true,
+            specSchema: true,
             visibility: true,
             sortOrder: true,
             parentId: true,
@@ -98,7 +99,7 @@ class CategoryService {
         };
     }
     static async createCategory(data, userId) {
-        const { name, nameFr, nameEn, slug, parentId, sortOrder, visibility, icon, metaTitle, metaDescription, metaKeywords } = data;
+        const { name, nameFr, nameEn, slug, parentId, sortOrder, visibility, icon, specSchema, metaTitle, metaDescription, metaKeywords } = data;
         // Verify user exists before setting audit fields
         const userExists = userId ? await index_1.prisma.user.findUnique({ where: { id: userId } }) : null;
         return await index_1.prisma.category.create({
@@ -111,6 +112,7 @@ class CategoryService {
                 sortOrder: sortOrder || 0,
                 visibility: visibility ?? true,
                 icon: icon || null,
+                specSchema: specSchema || null,
                 metaTitle: metaTitle || null,
                 metaDescription: metaDescription || null,
                 metaKeywords: metaKeywords || null,
@@ -120,7 +122,7 @@ class CategoryService {
         });
     }
     static async updateCategory(id, data, userId) {
-        const { name, nameFr, nameEn, slug, icon, parentId, visibility, sortOrder, menuGroup, metaTitle, metaDescription, metaKeywords } = data;
+        const { name, nameFr, nameEn, slug, icon, specSchema, parentId, visibility, sortOrder, menuGroup, metaTitle, metaDescription, metaKeywords } = data;
         // Verify user exists before setting audit fields
         const userExists = userId ? await index_1.prisma.user.findUnique({ where: { id: userId } }) : null;
         return await index_1.prisma.category.update({
@@ -131,6 +133,7 @@ class CategoryService {
                 ...(nameEn !== undefined && { nameEn: nameEn || null }),
                 ...(slug !== undefined && { slug }),
                 ...(icon !== undefined && { icon: icon || null }),
+                ...(specSchema !== undefined && { specSchema: specSchema || null }),
                 ...(parentId !== undefined && { parentId: parentId || null }),
                 ...(visibility !== undefined && { visibility }),
                 ...(sortOrder !== undefined && { sortOrder: Number(sortOrder) }),
