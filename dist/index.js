@@ -73,7 +73,7 @@ app.use((0, cors_1.default)({
     }
 }));
 // Limit JSON body size to prevent payload DDoS attacks
-app.use(express_1.default.json({ limit: '1mb' }));
+app.use(express_1.default.json({ limit: '50mb' }));
 // Set up Global Rate Limiter
 const globalLimiter = (0, express_rate_limit_1.default)({
     // windowMs: 15 * 60 * 1000, // 15 minutes

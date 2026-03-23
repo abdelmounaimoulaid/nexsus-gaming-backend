@@ -4,6 +4,10 @@
 -- 8. Update ProductStatus enum to include OUT_OF_STOCK
 ALTER TABLE `Product` MODIFY `status` ENUM('DRAFT', 'ACTIVE', 'HIDDEN', 'OUT_OF_STOCK') NOT NULL DEFAULT 'DRAFT';
 
+-- 9. Switch Image storage to LONGTEXT for Base64 (Store images in DB)
+ALTER TABLE `Banner` MODIFY `imagePath` LONGTEXT NOT NULL;
+ALTER TABLE `ProductImage` MODIFY `url` LONGTEXT NOT NULL;
+
 -- 1. If the Order table doesn't have orderNumber, add it:
 ALTER TABLE `Order` ADD COLUMN `orderNumber` INTEGER NOT NULL AUTO_INCREMENT UNIQUE AFTER `id`;
 
