@@ -10,6 +10,7 @@ export class UploadController {
             // Return the data URL for the image (Base64)
             const base64 = req.file.buffer.toString('base64');
             const imageUrl = `data:${req.file.mimetype};base64,${base64}`;
+            console.log('UPLOAD SUCCESS: Generated Data URL starting with:', imageUrl.substring(0, 50));
             res.json({ url: imageUrl });
         } catch (error) {
             res.status(500).json({ message: 'Upload failed', error: String(error) });
