@@ -251,7 +251,7 @@ model Collection {
 model ProductImage {
   id        String   @id @default(uuid())
   productId String
-  url       String
+  url       String   @db.LongText
   isPrimary Boolean  @default(false)
   createdAt DateTime @default(now())
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -273,7 +273,7 @@ model Section {
 model Banner {
   id        String    @id @default(uuid())
   title     String
-  imagePath String
+  imagePath String    @db.LongText
   targetUrl String
   sectionId String?
   startDate DateTime?
