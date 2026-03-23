@@ -124,6 +124,40 @@ export class ProductController {
         }
     }
 
+    static async bulkUpdateStockStatus(req: Request, res: Response) {
+        try {
+            const { ids, status } = req.body;
+            if (!Array.isArray(ids) || ids.length === 0) {
+                return res.status(400).json({ message: 'No product IDs provided.' });
+            }
+            if (!['IN_STOCK', 'OUT_OF_STOCK'].includes(status)) {
+                return res.status(400).json({ message: 'Invalid status. Must be IN_STOCK or OUT_OF_STOCK.' });
+            }
+            const userId = (req as any).user?.id;
+            const result = await ProductService.bulkUpdateStockStatus(ids, status, userId);
+            res.json({ success: true, count: result.count });
+        } catch (error) {
+            res.status(400).json({ message: 'Failed to bulk update stock status', error: String(error) });
+        }
+    }
+
+    static async bulkUpdateCategory(req: Request, res: Response) {
+        try {
+            const { ids, categoryId } = req.body;
+            if (!Array.isArray(ids) || ids.length === 0) {
+                return res.status(400).json({ message: 'No product IDs provided.' });
+            }
+            if (!categoryId) {
+                return res.status(400).json({ message: 'No category ID provided.' });
+            }
+            const userId = (req as any).user?.id;
+            const result = await ProductService.bulkUpdateCategory(ids, categoryId, userId);
+            res.json({ success: true, count: result.count });
+        } catch (error) {
+            res.status(400).json({ message: 'Failed to bulk update category', error: String(error) });
+        }
+    }
+
     static async deleteProduct(req: Request, res: Response) {
         try {
             await ProductService.deleteProduct(req.params.id as string);

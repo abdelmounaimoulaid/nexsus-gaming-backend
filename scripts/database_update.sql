@@ -1,6 +1,9 @@
 -- Database update for Orders and OrderNumber support
 -- Run this in your Hostinger SQL console (phpMyAdmin or similar)
 
+-- 8. Update ProductStatus enum to include OUT_OF_STOCK
+ALTER TABLE `Product` MODIFY `status` ENUM('DRAFT', 'ACTIVE', 'HIDDEN', 'OUT_OF_STOCK') NOT NULL DEFAULT 'DRAFT';
+
 -- 1. If the Order table doesn't have orderNumber, add it:
 ALTER TABLE `Order` ADD COLUMN `orderNumber` INTEGER NOT NULL AUTO_INCREMENT UNIQUE AFTER `id`;
 

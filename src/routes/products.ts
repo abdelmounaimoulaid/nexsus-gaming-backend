@@ -17,6 +17,8 @@ router.put('/:id', requireAuth, ProductController.updateProduct);
 router.post('/import', requireAuth, upload.single('file'), ProductController.importProducts);
 
 router.patch('/bulk/out-of-stock', requireAuth, ProductController.bulkOutOfStockProducts);
+router.patch('/bulk/stock-status', requireAuth, ProductController.bulkUpdateStockStatus);
+router.patch('/bulk/category', requireAuth, ProductController.bulkUpdateCategory);
 router.delete('/bulk', requireAuth, ProductController.bulkDeleteProducts);
 router.delete('/:id', requireAuth, ProductController.deleteProduct);
 
